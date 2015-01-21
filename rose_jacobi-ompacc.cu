@@ -234,11 +234,11 @@ void jacobi()
 /* Copy new solution into old */
 {
       float *_dev_u;
-      int _dev_u_size = sizeof(float ) * (n - 0) * (m - 0);
+      int _dev_u_size = sizeof(float ) * n * m;
       _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
       xomp_memcpyHostToDevice(((void *)_dev_u),((const void *)u),_dev_u_size);
       float *_dev_uold;
-      int _dev_uold_size = sizeof(float ) * (n - 0) * (m - 0);
+      int _dev_uold_size = sizeof(float ) * n * m;
       _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
 /* Launch CUDA kernel ... */
       int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
@@ -250,14 +250,14 @@ void jacobi()
     }
 {
       float *_dev_u;
-      int _dev_u_size = sizeof(float ) * (n - 0) * (m - 0);
+      int _dev_u_size = sizeof(float ) * n * m;
       _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
       float *_dev_f;
-      int _dev_f_size = sizeof(float ) * (n - 0) * (m - 0);
+      int _dev_f_size = sizeof(float ) * n * m;
       _dev_f = ((float *)(xomp_deviceMalloc(_dev_f_size)));
       xomp_memcpyHostToDevice(((void *)_dev_f),((const void *)f),_dev_f_size);
       float *_dev_uold;
-      int _dev_uold_size = sizeof(float ) * (n - 0) * (m - 0);
+      int _dev_uold_size = sizeof(float ) * n * m;
       _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
       xomp_memcpyHostToDevice(((void *)_dev_uold),((const void *)uold),_dev_uold_size);
 /* Launch CUDA kernel ... */

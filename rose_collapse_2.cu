@@ -49,7 +49,7 @@ int main()
   }
 {
     int *_dev_a;
-    int _dev_a_size = sizeof(int ) * (11 - 0) * (11 - 0);
+    int _dev_a_size = sizeof(int ) * 11 * 11;
     _dev_a = ((int *)(xomp_deviceMalloc(_dev_a_size)));
     xomp_memcpyHostToDevice(((void *)_dev_a),((const void *)a),_dev_a_size);
 /* Launch CUDA kernel ... */

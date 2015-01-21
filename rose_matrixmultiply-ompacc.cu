@@ -79,15 +79,15 @@ int mmm()
 {
 {
     float *_dev_a;
-    int _dev_a_size = sizeof(float ) * (N - 0) * (M - 0);
+    int _dev_a_size = sizeof(float ) * N * M;
     _dev_a = ((float *)(xomp_deviceMalloc(_dev_a_size)));
     xomp_memcpyHostToDevice(((void *)_dev_a),((const void *)a),_dev_a_size);
     float *_dev_b;
-    int _dev_b_size = sizeof(float ) * (M - 0) * (K - 0);
+    int _dev_b_size = sizeof(float ) * M * K;
     _dev_b = ((float *)(xomp_deviceMalloc(_dev_b_size)));
     xomp_memcpyHostToDevice(((void *)_dev_b),((const void *)b),_dev_b_size);
     float *_dev_c;
-    int _dev_c_size = sizeof(float ) * (N - 0) * (M - 0);
+    int _dev_c_size = sizeof(float ) * N * M;
     _dev_c = ((float *)(xomp_deviceMalloc(_dev_c_size)));
     xomp_memcpyHostToDevice(((void *)_dev_c),((const void *)c),_dev_c_size);
 /* Launch CUDA kernel ... */

@@ -1,4 +1,5 @@
 // Experimental test input for Accelerator directives
+//  simplest scalar*vector operations
 // Liao 1/15/2013
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,11 +56,11 @@ void axpy_ompacc(double *x,double *y,int n,double a)
 */
 {
     double *_dev_x;
-    int _dev_x_size = sizeof(double ) * (n - 0);
+    int _dev_x_size = sizeof(double ) * n;
     _dev_x = ((double *)(xomp_deviceMalloc(_dev_x_size)));
     xomp_memcpyHostToDevice(((void *)_dev_x),((const void *)x),_dev_x_size);
     double *_dev_y;
-    int _dev_y_size = sizeof(double ) * (n - 0);
+    int _dev_y_size = sizeof(double ) * n;
     _dev_y = ((double *)(xomp_deviceMalloc(_dev_y_size)));
     xomp_memcpyHostToDevice(((void *)_dev_y),((const void *)y),_dev_y_size);
 /* Launch CUDA kernel ... */
