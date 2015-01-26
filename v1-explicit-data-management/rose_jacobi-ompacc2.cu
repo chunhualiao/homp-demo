@@ -233,30 +233,33 @@ void jacobi()
     error = 0.0;
 /* Copy new solution into old */
 {
-      xomp_deviceDataEnvironmentEnter();
       float *_dev_u;
       int _dev_u_size = sizeof(float ) * n * m;
-      _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,true,false)));
+      _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_u),((const void *)u),_dev_u_size);
       float *_dev_uold;
       int _dev_uold_size = sizeof(float ) * n * m;
-      _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,false,true)));
+      _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
 // Launch CUDA kernel ...
       int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
       int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 0 + 1);
       OUT__2__8554__<<<_num_blocks_,_threads_per_block_>>>(n,m,_dev_u,_dev_uold);
-      xomp_deviceDataEnvironmentExit();
+      xomp_freeDevice(_dev_u);
+      xomp_memcpyDeviceToHost(((void *)uold),((const void *)_dev_uold),_dev_uold_size);
+      xomp_freeDevice(_dev_uold);
     }
 {
-      xomp_deviceDataEnvironmentEnter();
       float *_dev_u;
       int _dev_u_size = sizeof(float ) * n * m;
-      _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,false,true)));
+      _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
       float *_dev_f;
       int _dev_f_size = sizeof(float ) * n * m;
-      _dev_f = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)f),_dev_f_size,true,false)));
+      _dev_f = ((float *)(xomp_deviceMalloc(_dev_f_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_f),((const void *)f),_dev_f_size);
       float *_dev_uold;
       int _dev_uold_size = sizeof(float ) * n * m;
-      _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,true,false)));
+      _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_uold),((const void *)uold),_dev_uold_size);
 // Launch CUDA kernel ...
       int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
       int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 1 - 1 + 1);
@@ -264,7 +267,10 @@ void jacobi()
       OUT__1__8554__<<<_num_blocks_,_threads_per_block_,(_threads_per_block_ * sizeof(float ))>>>(n,m,omega,ax,ay,b,_dev_per_block_error,_dev_u,_dev_f,_dev_uold);
       error = xomp_beyond_block_reduction_float(_dev_per_block_error,_num_blocks_,6);
       xomp_freeDevice(_dev_per_block_error);
-      xomp_deviceDataEnvironmentExit();
+      xomp_memcpyDeviceToHost(((void *)u),((const void *)_dev_u),_dev_u_size);
+      xomp_freeDevice(_dev_u);
+      xomp_freeDevice(_dev_f);
+      xomp_freeDevice(_dev_uold);
     }
 //    }
 /*  omp end parallel */

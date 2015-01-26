@@ -1,3 +1,4 @@
+// Using target data to promote data allocation to higher level, enabling reusing in iterations
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
@@ -231,27 +232,44 @@ void jacobi()
   k = 1;
 /* Translated from #pragma omp target data ... */
 {
+    xomp_deviceDataEnvironmentEnter();
     float *_dev_u;
     int _dev_u_size = sizeof(float ) * n * m;
-    _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
-    xomp_memcpyHostToDevice(((void *)_dev_u),((const void *)u),_dev_u_size);
+    _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,1,1)));
     float *_dev_f;
     int _dev_f_size = sizeof(float ) * n * m;
-    _dev_f = ((float *)(xomp_deviceMalloc(_dev_f_size)));
-    xomp_memcpyHostToDevice(((void *)_dev_f),((const void *)f),_dev_f_size);
+    _dev_f = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)f),_dev_f_size,1,0)));
     float *_dev_uold;
     int _dev_uold_size = sizeof(float ) * n * m;
-    _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
+    _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,0,0)));
     while(k <= mits && error > tol){
       error = 0.0;
 /* Copy new solution into old */
 {
+        xomp_deviceDataEnvironmentEnter();
+        float *_dev_u;
+        int _dev_u_size = sizeof(float ) * n * m;
+        _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,1,0)));
+        float *_dev_uold;
+        int _dev_uold_size = sizeof(float ) * n * m;
+        _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,0,1)));
 /* Launch CUDA kernel ... */
         int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
         int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 0 + 1);
         OUT__2__8713__<<<_num_blocks_,_threads_per_block_>>>(n,m,_dev_u,_dev_uold);
+        xomp_deviceDataEnvironmentExit();
       }
 {
+        xomp_deviceDataEnvironmentEnter();
+        float *_dev_u;
+        int _dev_u_size = sizeof(float ) * n * m;
+        _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,0,1)));
+        float *_dev_f;
+        int _dev_f_size = sizeof(float ) * n * m;
+        _dev_f = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)f),_dev_f_size,1,0)));
+        float *_dev_uold;
+        int _dev_uold_size = sizeof(float ) * n * m;
+        _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,1,0)));
 /* Launch CUDA kernel ... */
         int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
         int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 1 - 1 + 1);
@@ -259,6 +277,7 @@ void jacobi()
         OUT__1__8713__<<<_num_blocks_,_threads_per_block_,(_threads_per_block_ * sizeof(float ))>>>(n,m,omega,ax,ay,b,_dev_per_block_error,_dev_u,_dev_f,_dev_uold);
         error = xomp_beyond_block_reduction_float(_dev_per_block_error,_num_blocks_,6);
         xomp_freeDevice(_dev_per_block_error);
+        xomp_deviceDataEnvironmentExit();
       }
 //    }
 /*  omp end parallel */
@@ -270,16 +289,13 @@ void jacobi()
       k = k + 1;
 /*  End iteration loop */
     }
-    xomp_memcpyDeviceToHost(((void *)u),((const void *)_dev_u),_dev_u_size);
-    xomp_freeDevice(_dev_u);
-    xomp_freeDevice(_dev_f);
-    xomp_freeDevice(_dev_uold);
+    xomp_deviceDataEnvironmentExit();
   }
   printf("Total Number of Iterations:%d\n",k);
   printf("Residual:%E\n",error);
   printf("Residual_ref :%E\n",resid_ref);
   printf("Diff ref=%E\n",(fabs((error - resid_ref))));
-  fabs((error - resid_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-resid_ref) < 1E-14","jacobi-ompacc-opt1.c",234,__PRETTY_FUNCTION__);
+  fabs((error - resid_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-resid_ref) < 1E-14","jacobi-ompacc-opt1.c",235,__PRETTY_FUNCTION__);
 }
 /*      subroutine error_check (n,m,alpha,dx,dy,u,f) 
         implicit none 
@@ -311,5 +327,5 @@ void error_check()
   printf("Solution Error :%E \n",error);
   printf("Solution Error Ref :%E \n",error_ref);
   printf("Diff ref=%E\n",(fabs((error - error_ref))));
-  fabs((error - error_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-error_ref) < 1E-14","jacobi-ompacc-opt1.c",266,__PRETTY_FUNCTION__);
+  fabs((error - error_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-error_ref) < 1E-14","jacobi-ompacc-opt1.c",267,__PRETTY_FUNCTION__);
 }

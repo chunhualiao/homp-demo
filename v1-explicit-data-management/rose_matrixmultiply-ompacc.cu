@@ -78,21 +78,26 @@ __global__ void OUT__1__9221__(float *_dev_a,float *_dev_b,float *_dev_c)
 int mmm()
 {
 {
-    xomp_deviceDataEnvironmentEnter();
     float *_dev_a;
-    int _dev_a_size = sizeof(float ) * 1024 * 1024;
-    _dev_a = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)a),_dev_a_size,1,0)));
+    int _dev_a_size = sizeof(float ) * N * M;
+    _dev_a = ((float *)(xomp_deviceMalloc(_dev_a_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_a),((const void *)a),_dev_a_size);
     float *_dev_b;
-    int _dev_b_size = sizeof(float ) * 1024 * 1024;
-    _dev_b = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)b),_dev_b_size,1,0)));
+    int _dev_b_size = sizeof(float ) * M * K;
+    _dev_b = ((float *)(xomp_deviceMalloc(_dev_b_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_b),((const void *)b),_dev_b_size);
     float *_dev_c;
-    int _dev_c_size = sizeof(float ) * 1024 * 1024;
-    _dev_c = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)c),_dev_c_size,1,1)));
+    int _dev_c_size = sizeof(float ) * N * M;
+    _dev_c = ((float *)(xomp_deviceMalloc(_dev_c_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_c),((const void *)c),_dev_c_size);
 /* Launch CUDA kernel ... */
     int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
     int _num_blocks_ = xomp_get_max1DBlock(1023 - 0 + 1);
     OUT__1__9221__<<<_num_blocks_,_threads_per_block_>>>(_dev_a,_dev_b,_dev_c);
-    xomp_deviceDataEnvironmentExit();
+    xomp_freeDevice(_dev_a);
+    xomp_freeDevice(_dev_b);
+    xomp_memcpyDeviceToHost(((void *)c),((const void *)_dev_c),_dev_c_size);
+    xomp_freeDevice(_dev_c);
   }
   return 0;
 }
@@ -117,6 +122,6 @@ int verify()
     }
   printf("sum of c[i][j] is %f\n",sum);
   printf("sum of c2[i][j] is %f\n",sum2);
-  sum == sum2?((void )0) : __assert_fail("sum == sum2","matrixmultiply-ompacc.c",94,__PRETTY_FUNCTION__);
+  sum == sum2?((void )0) : __assert_fail("sum == sum2","matrixmultiply-ompacc.c",92,__PRETTY_FUNCTION__);
   return 0;
 }

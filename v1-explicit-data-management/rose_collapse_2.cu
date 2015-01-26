@@ -48,15 +48,16 @@ int main()
     }
   }
 {
-    xomp_deviceDataEnvironmentEnter();
     int *_dev_a;
     int _dev_a_size = sizeof(int ) * 11 * 11;
-    _dev_a = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)a),_dev_a_size,1,1)));
+    _dev_a = ((int *)(xomp_deviceMalloc(_dev_a_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_a),((const void *)a),_dev_a_size);
 /* Launch CUDA kernel ... */
     int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
     int _num_blocks_ = xomp_get_max1DBlock(__final_total_iters__2__ - 1 - 0 + 1);
     OUT__1__7988__<<<_num_blocks_,_threads_per_block_>>>(__final_total_iters__2__,__i_interval__3__,_dev_a);
-    xomp_deviceDataEnvironmentExit();
+    xomp_memcpyDeviceToHost(((void *)a),((const void *)_dev_a),_dev_a_size);
+    xomp_freeDevice(_dev_a);
   }
 /*
   for(i = 0; i < 11; i ++)

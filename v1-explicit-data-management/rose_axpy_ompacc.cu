@@ -55,18 +55,21 @@ void axpy_ompacc(double *x,double *y,int n,double a)
    #pragma omp target device (gpu0) map(x, y) 
 */
 {
-    xomp_deviceDataEnvironmentEnter();
     double *_dev_x;
     int _dev_x_size = sizeof(double ) * n;
-    _dev_x = ((double *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)x),_dev_x_size,1,0)));
+    _dev_x = ((double *)(xomp_deviceMalloc(_dev_x_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_x),((const void *)x),_dev_x_size);
     double *_dev_y;
     int _dev_y_size = sizeof(double ) * n;
-    _dev_y = ((double *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)y),_dev_y_size,1,1)));
+    _dev_y = ((double *)(xomp_deviceMalloc(_dev_y_size)));
+    xomp_memcpyHostToDevice(((void *)_dev_y),((const void *)y),_dev_y_size);
 /* Launch CUDA kernel ... */
     int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
     int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 0 + 1);
     OUT__1__8164__<<<_num_blocks_,_threads_per_block_>>>(n,a,_dev_x,_dev_y);
-    xomp_deviceDataEnvironmentExit();
+    xomp_freeDevice(_dev_x);
+    xomp_memcpyDeviceToHost(((void *)y),((const void *)_dev_y),_dev_y_size);
+    xomp_freeDevice(_dev_y);
   }
 }
 

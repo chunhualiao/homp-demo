@@ -14,8 +14,8 @@ double time_stamp()
 {
   struct timeval t;
   double time;
-  gettimeofday(&t,((struct timezone *)0L));
-  time = t . timeval::tv_sec + 1.0e-6 * t . timeval::tv_usec;
+  gettimeofday(&t,((struct timezone *)((void *)0)));
+  time = t . tv_sec + 1.0e-6 * t . tv_usec;
   return time;
 }
 double time1;
@@ -52,7 +52,7 @@ void error_check();
 *************************************************************/
 #define REAL float // flexible between float and double
 #define MSIZE 512
-// depending on MSIZE!
+// depending on MSIZE!!
 float error_ref = 9.212767E-04;
 float resid_ref = 2.355429E-08;
 int n;
@@ -158,7 +158,7 @@ void initialize()
 * Output : u(n,m) - Solution 
 *****************************************************************/
 
-extern "C" __global__ void OUT__1__8554__(int n,int m,float omega,float ax,float ay,float b,float *_dev_per_block_error,float *_dev_u,float *_dev_f,float *_dev_uold)
+__global__ void OUT__1__8280__(int n,int m,float omega,float ax,float ay,float b,float *_dev_per_block_error,float *_dev_u,float *_dev_f,float *_dev_uold)
 {
   int _p_i;
   int _p_j;
@@ -172,10 +172,10 @@ extern "C" __global__ void OUT__1__8554__(int n,int m,float omega,float ax,float
   int _dev_loop_stride;
   int _dev_thread_num = getCUDABlockThreadCount(1);
   int _dev_thread_id = getLoopIndexFromCUDAVariables(1);
-  XOMP_static_sched_init(1,::n - 1 - 1,1,1,_dev_thread_num,_dev_thread_id,&_dev_loop_chunk_size,&_dev_loop_sched_index,&_dev_loop_stride);
-  while(XOMP_static_sched_next(&_dev_loop_sched_index,::n - 1 - 1,1,_dev_loop_stride,_dev_loop_chunk_size,_dev_thread_num,_dev_thread_id,&_dev_lower,&_dev_upper))
+  XOMP_static_sched_init(1,n - 1 - 1,1,1,_dev_thread_num,_dev_thread_id,&_dev_loop_chunk_size,&_dev_loop_sched_index,&_dev_loop_stride);
+  while(XOMP_static_sched_next(&_dev_loop_sched_index,n - 1 - 1,1,_dev_loop_stride,_dev_loop_chunk_size,_dev_thread_num,_dev_thread_id,&_dev_lower,&_dev_upper))
     for (_p_i = _dev_lower; _p_i <= _dev_upper; _p_i += 1) {
-      for (_p_j = 1; _p_j < ::m - 1; _p_j++) {
+      for (_p_j = 1; _p_j < m - 1; _p_j++) {
         _p_resid = (ax * (_dev_uold[(_p_i - 1) * 512 + _p_j] + _dev_uold[(_p_i + 1) * 512 + _p_j]) + ay * (_dev_uold[_p_i * 512 + (_p_j - 1)] + _dev_uold[_p_i * 512 + (_p_j + 1)]) + b * _dev_uold[_p_i * 512 + _p_j] - _dev_f[_p_i * 512 + _p_j]) / b;
         _dev_u[_p_i * 512 + _p_j] = _dev_uold[_p_i * 512 + _p_j] - omega * _p_resid;
         _p_error = _p_error + _p_resid * _p_resid;
@@ -184,7 +184,7 @@ extern "C" __global__ void OUT__1__8554__(int n,int m,float omega,float ax,float
   xomp_inner_block_reduction_float(_p_error,_dev_per_block_error,6);
 }
 
-extern "C" __global__ void OUT__2__8554__(int n,int m,float *_dev_u,float *_dev_uold)
+__global__ void OUT__2__8280__(int n,int m,float *_dev_u,float *_dev_uold)
 {
   int _p_i;
   int _p_j;
@@ -195,10 +195,10 @@ extern "C" __global__ void OUT__2__8554__(int n,int m,float *_dev_u,float *_dev_
   int _dev_loop_stride;
   int _dev_thread_num = getCUDABlockThreadCount(1);
   int _dev_thread_id = getLoopIndexFromCUDAVariables(1);
-  XOMP_static_sched_init(0,::n - 1,1,1,_dev_thread_num,_dev_thread_id,&_dev_loop_chunk_size,&_dev_loop_sched_index,&_dev_loop_stride);
-  while(XOMP_static_sched_next(&_dev_loop_sched_index,::n - 1,1,_dev_loop_stride,_dev_loop_chunk_size,_dev_thread_num,_dev_thread_id,&_dev_lower,&_dev_upper))
+  XOMP_static_sched_init(0,n - 1,1,1,_dev_thread_num,_dev_thread_id,&_dev_loop_chunk_size,&_dev_loop_sched_index,&_dev_loop_stride);
+  while(XOMP_static_sched_next(&_dev_loop_sched_index,n - 1,1,_dev_loop_stride,_dev_loop_chunk_size,_dev_thread_num,_dev_thread_id,&_dev_lower,&_dev_upper))
     for (_p_i = _dev_lower; _p_i <= _dev_upper; _p_i += 1) {
-      for (_p_j = 0; _p_j < ::m; _p_j++) 
+      for (_p_j = 0; _p_j < m; _p_j++) 
         _dev_uold[_p_i * 512 + _p_j] = _dev_u[_p_i * 512 + _p_j];
     }
 }
@@ -233,38 +233,44 @@ void jacobi()
     error = 0.0;
 /* Copy new solution into old */
 {
-      xomp_deviceDataEnvironmentEnter();
       float *_dev_u;
       int _dev_u_size = sizeof(float ) * n * m;
-      _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,true,false)));
+      _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_u),((const void *)u),_dev_u_size);
       float *_dev_uold;
       int _dev_uold_size = sizeof(float ) * n * m;
-      _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,false,true)));
-// Launch CUDA kernel ...
+      _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
+/* Launch CUDA kernel ... */
       int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
       int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 0 + 1);
-      OUT__2__8554__<<<_num_blocks_,_threads_per_block_>>>(n,m,_dev_u,_dev_uold);
-      xomp_deviceDataEnvironmentExit();
+      OUT__2__8280__<<<_num_blocks_,_threads_per_block_>>>(n,m,_dev_u,_dev_uold);
+      xomp_freeDevice(_dev_u);
+      xomp_memcpyDeviceToHost(((void *)uold),((const void *)_dev_uold),_dev_uold_size);
+      xomp_freeDevice(_dev_uold);
     }
 {
-      xomp_deviceDataEnvironmentEnter();
       float *_dev_u;
       int _dev_u_size = sizeof(float ) * n * m;
-      _dev_u = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)u),_dev_u_size,false,true)));
+      _dev_u = ((float *)(xomp_deviceMalloc(_dev_u_size)));
       float *_dev_f;
       int _dev_f_size = sizeof(float ) * n * m;
-      _dev_f = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)f),_dev_f_size,true,false)));
+      _dev_f = ((float *)(xomp_deviceMalloc(_dev_f_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_f),((const void *)f),_dev_f_size);
       float *_dev_uold;
       int _dev_uold_size = sizeof(float ) * n * m;
-      _dev_uold = ((float *)(xomp_deviceDataEnvironmentPrepareVariable(((void *)uold),_dev_uold_size,true,false)));
-// Launch CUDA kernel ...
+      _dev_uold = ((float *)(xomp_deviceMalloc(_dev_uold_size)));
+      xomp_memcpyHostToDevice(((void *)_dev_uold),((const void *)uold),_dev_uold_size);
+/* Launch CUDA kernel ... */
       int _threads_per_block_ = xomp_get_maxThreadsPerBlock();
       int _num_blocks_ = xomp_get_max1DBlock(n - 1 - 1 - 1 + 1);
       float *_dev_per_block_error = (float *)(xomp_deviceMalloc(_num_blocks_ * sizeof(float )));
-      OUT__1__8554__<<<_num_blocks_,_threads_per_block_,(_threads_per_block_ * sizeof(float ))>>>(n,m,omega,ax,ay,b,_dev_per_block_error,_dev_u,_dev_f,_dev_uold);
+      OUT__1__8280__<<<_num_blocks_,_threads_per_block_,(_threads_per_block_ * sizeof(float ))>>>(n,m,omega,ax,ay,b,_dev_per_block_error,_dev_u,_dev_f,_dev_uold);
       error = xomp_beyond_block_reduction_float(_dev_per_block_error,_num_blocks_,6);
       xomp_freeDevice(_dev_per_block_error);
-      xomp_deviceDataEnvironmentExit();
+      xomp_memcpyDeviceToHost(((void *)u),((const void *)_dev_u),_dev_u_size);
+      xomp_freeDevice(_dev_u);
+      xomp_freeDevice(_dev_f);
+      xomp_freeDevice(_dev_uold);
     }
 //    }
 /*  omp end parallel */
@@ -280,7 +286,7 @@ void jacobi()
   printf("Residual:%E\n",error);
   printf("Residual_ref :%E\n",resid_ref);
   printf("Diff ref=%E\n",(fabs((error - resid_ref))));
-  fabs((error - resid_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-resid_ref) < 1E-14","jacobi-ompacc2.cpp",234,__PRETTY_FUNCTION__);
+  fabs((error - resid_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-resid_ref) < 1E-14","jacobi-ompacc.c",234,__PRETTY_FUNCTION__);
 }
 /*      subroutine error_check (n,m,alpha,dx,dy,u,f) 
       implicit none 
@@ -312,5 +318,5 @@ void error_check()
   printf("Solution Error :%E \n",error);
   printf("Solution Error Ref :%E \n",error_ref);
   printf("Diff ref=%E\n",(fabs((error - error_ref))));
-  fabs((error - error_ref)) < 1E-8?((void )0) : __assert_fail("fabs(error-error_ref) < 1E-8","jacobi-ompacc2.cpp",266,__PRETTY_FUNCTION__);
+  fabs((error - error_ref)) < 1E-14?((void )0) : __assert_fail("fabs(error-error_ref) < 1E-14","jacobi-ompacc.c",266,__PRETTY_FUNCTION__);
 }
