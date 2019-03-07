@@ -1,4 +1,4 @@
-Generated CUDA file from HOMP translator (roseompacc).
+Generated CUDA files from input files using OpenMP 4.x directives using HOMP translator (roseompacc).
 
 More info. is available at: 
 
