@@ -5,6 +5,10 @@
 #include "libxomp.h" 
 #include "xomp_cuda_lib_inlined.cu" 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapScore,int matchScore,int missmatchScore,long long si,long long sj,char *_dev_a,char *_dev_b,int *_dev_H,int *_dev_P,long long *_dev_maxPos_ptr)
 {
   long long _p_j;
@@ -116,3 +120,6 @@ void calculate(char *a,char *b,long long nEle,long long m,long long n,int gapSco
 //      } // for end nDiag
 //    } // end omp parallel
 //}
+#ifdef __cplusplus
+}
+#endif
