@@ -1,4 +1,4 @@
-all: a.out a5120.out axpy.out mm.out v6.5.out v7.out
+all: a.out a5120.out axpy.out mm.out v6.5.out v7.out testv7.out
 # default size 512
 a.out: rose_jacobi-acc-opt2.cu xomp_cuda_lib.cu
 	nvcc $^ -o $@
@@ -15,9 +15,17 @@ mm.out: rose_matrixmultiply-ompacc.cu xomp_cuda_lib.cu
 v6.5.out: rose_omp_smithW-v6.5-target-inlined-work.cu xomp_cuda_lib.cu
 	nvcc $^ -g -G -o $@
 
-v7.out: rose_omp_smithW-v7.1-adaptive.c rose_omp_smithW-v7.1-adaptive-func.cu xomp_cuda_lib.cu
-	gcc -fopenmp -g -c omp_smithW-v7.1-adaptive.c
+omp_smithW-v7.1-adaptive.o: omp_smithW-v7.1-adaptive.c
+	gcc -fopenmp -g -c $^
+
+omp_smithW-v7.1-test.o: omp_smithW-v7.1-test.c
+	gcc -fopenmp -g -c $^
+
+v7.out: omp_smithW-v7.1-adaptive.o rose_omp_smithW-v7.1-adaptive-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G rose_omp_smithW-v7.1-adaptive-func.cu -o v7.out -lgomp omp_smithW-v7.1-adaptive.o
 
+testv7.out: omp_smithW-v7.1-test.o rose_omp_smithW-v7.1-adaptive-func.cu xomp_cuda_lib.cu
+	nvcc xomp_cuda_lib.cu -g -G rose_omp_smithW-v7.1-adaptive-func.cu -o testv7.out -lgomp omp_smithW-v7.1-test.o
+
 clean:
-	rm -rf *.out
+	rm -rf *.out *.o
