@@ -19,6 +19,7 @@
 #include <stdbool.h> // C99 does not support the boolean data type
 
 #include "parameters.h"
+#include "libxomp.h"
 
 /*--------------------------------------------------------------------
  * Text Tweaks
@@ -253,6 +254,33 @@ int main(int argc, char* argv[]) {
 // choice 2: map data before the outer loop
 //#pragma omp target map (to:a[0:m], b[0:n], nDiag, m,n,gapScore, matchScore, missmatchScore) map(tofrom: H[0:asz], P[0:asz], maxPos)
 //  #pragma omp parallel default(none) shared(H, P, maxPos, nDiag, j) private(i)
+	    long long int *maxPos_ptr = &maxPos;
+	xomp_deviceDataEnvironmentEnter(0);
+    char *_dev_a;
+    int _dev_a_size[1] = {m};
+    int _dev_a_offset[1] = {0};
+    int _dev_a_Dim[1] = {m};
+    _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
+    char *_dev_b;
+    int _dev_b_size[1] = {n};
+    int _dev_b_offset[1] = {0};
+    int _dev_b_Dim[1] = {n};
+    _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
+    int *_dev_H;
+    int _dev_H_size[1] = {asz};
+    int _dev_H_offset[1] = {0};
+    int _dev_H_Dim[1] = {asz};
+    _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
+    int *_dev_P;
+    int _dev_P_size[1] = {asz};
+    int _dev_P_offset[1] = {0};
+    int _dev_P_Dim[1] = {asz};
+    _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
+    long long *_dev_maxPos_ptr;
+    int _dev_maxPos_ptr_size[1] = {1};
+    int _dev_maxPos_ptr_offset[1] = {0};
+    int _dev_maxPos_ptr_Dim[1] = {1};
+    _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
     {
       for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
       {
@@ -299,8 +327,7 @@ int main(int argc, char* argv[]) {
 	else if (nEle<LARGE) // omp cpu version: medium to large: medium data set
 	{
 
-    long long int *maxPos_ptr = &maxPos;
-   #pragma omp parallel for private(j) shared (nEle, si, sj, H, P, maxPos_ptr) 
+   #pragma omp parallel for private(j) shared (nEle, si, sj, H, P) 
 	  for (j = 0; j < nEle; ++j)
 	  {  // going upwards : anti-diagnol direction
 	    long long int ai = si - j ; // going up vertically
@@ -312,11 +339,12 @@ int main(int argc, char* argv[]) {
         //--------------------------------------
         {
 // choice 1: map data before the inner loop
-    long long int *maxPos_ptr = &maxPos;
+
     calculate(a,  b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz) ;
         }
       }
     }
+    xomp_deviceDataEnvironmentExit(0);
 
   double finalTime = omp_get_wtime();
   printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
