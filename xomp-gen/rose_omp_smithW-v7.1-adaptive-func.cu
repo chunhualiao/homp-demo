@@ -72,10 +72,27 @@ __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapSco
         _dev_H[index - 0] = max;
         _dev_P[index - 0] = pred;
 //Updates maximum score to be used as seed on backtrack
+  /***** we use cuda atomicCAS to do critical ******
         if (max > _dev_H[_dev_maxPos_ptr[0] - 0]) {
-//#pragma omp critical
+        //#pragma omp critical
           _dev_maxPos_ptr[0 - 0] = index;
         }
+        ******/
+    {   
+    // \note \pp
+    //   locks seem to be a NOGO in CUDA warps,
+    //   thus the update to set the maximum is made nonblocking.
+    unsigned long long int current = _dev_maxPos_ptr[0];
+    unsigned long long int assumed = current+1;
+
+    while (assumed != current && max > _dev_H[current])
+    { 
+        assumed = current;
+
+        // \note consider atomicCAS_system for multi GPU systems
+        current = atomicCAS((unsigned long long int*)_dev_maxPos_ptr, (unsigned long long int)assumed, (unsigned long long int)index);
+    } 
+    } 
       }
 // ---------------------------------------------------------------
     }
