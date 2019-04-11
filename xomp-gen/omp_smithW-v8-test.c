@@ -106,8 +106,10 @@ void calcFirstDiagElement(long long int i, long long int *si, long long int *sj)
  */
 bool useBuiltInData=true;
 
-int MEDIUM=1024;
-int LARGE=2048; // max 46340 for GPU of 16GB Device memory
+//int MEDIUM=1;
+int MEDIUM=1200;
+//int LARGE=2048; // max 46340 for GPU of 16GB Device memory
+int LARGE=8000; // max 46340 for GPU of 16GB Device memory
 
 // the generated scoring matrix's size is m++ and n++ later to have the first row/column as 0s.
 
@@ -121,12 +123,20 @@ int main(int argc, char* argv[]) {
   // thread_count is no longer used
   int thread_count;
   xomp_acc_init();
+  bool hasInitGPU = false;
+  bool enteredGPU = false;
   if (argc==3)
   {
     m = strtoll(argv[1], NULL, 10);
     n = strtoll(argv[2], NULL, 10);
     useBuiltInData = false;
-  } else if (argc ==5) 
+  } else if (argc == 4) 
+  {
+    m = strtoll(argv[1], NULL, 10);
+    n = strtoll(argv[2], NULL, 10);
+    LARGE = atoi(argv[3]);
+    useBuiltInData = false;
+  } else if (argc == 5) 
   {
     m = strtoll(argv[1], NULL, 10);
     n = strtoll(argv[2], NULL, 10);
@@ -144,16 +154,16 @@ int main(int argc, char* argv[]) {
   printf("Problem size: Matrix[%lld][%lld], Medium=%d Large=%d\n", n, m, MEDIUM, LARGE);
 //#endif
 
+    //Because now we have zeros
+    m++;
+    n++;
+
     //Allocates a and b
     a = (char*) malloc(m * sizeof(char));
 //    printf ("debug: a's address=%p\n", a);
 
     b = (char*) malloc(n * sizeof(char));
 //    printf ("debug: b's address=%p\n", b);
-
-    //Because now we have zeros
-    m++;
-    n++;
 
     //Allocates similarity matrix H
     int *H;
@@ -248,6 +258,12 @@ int main(int argc, char* argv[]) {
     //Gets Initial time
     double initialTime = omp_get_wtime();
 
+    // time measurements for each iteration of outer loop.
+    double iterationTime;
+    // time measurements for GPU memory copy.
+    double memCopyInGPUTime;
+    double memCopyOutGPUTime;
+
     // mistake: element count, not byte size!!
     // int asz= m*n*sizeof(int);
     int asz= m*n;
@@ -255,6 +271,7 @@ int main(int argc, char* argv[]) {
 //#pragma omp target map (to:a[0:m], b[0:n], nDiag, m,n,gapScore, matchScore, missmatchScore) map(tofrom: H[0:asz], P[0:asz], maxPos)
 //  #pragma omp parallel default(none) shared(H, P, maxPos, nDiag, j) private(i)
 	    long long int *maxPos_ptr = &maxPos;
+    /*
 	xomp_deviceDataEnvironmentEnter(0);
     char *_dev_a;
     int _dev_a_size[1] = {m};
@@ -281,6 +298,7 @@ int main(int argc, char* argv[]) {
     int _dev_maxPos_ptr_offset[1] = {0};
     int _dev_maxPos_ptr_Dim[1] = {1};
     _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
+*/
     {
       for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
       {
@@ -317,15 +335,34 @@ int main(int argc, char* argv[]) {
 	// serial version: 0 to < medium: small data set
         if (nEle< MEDIUM)
 	{
+      iterationTime = omp_get_wtime();
+    // only if GPU is used, copy mem back
+    if (enteredGPU) {
+        memCopyOutGPUTime = omp_get_wtime();
+        xomp_deviceDataEnvironmentExit(0);
+        enteredGPU = false;
+        memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+    };
           for (j = 0; j < nEle; ++j) 
           {  // going upwards : anti-diagnol direction
             long long int ai = si - j ; // going up vertically
             long long int aj = sj + j;  //  going right in horizontal
             similarityScore2(ai, aj, H, P, &maxPos); // a specialized version without a critical section used inside
           }
+      iterationTime = omp_get_wtime() - iterationTime;
+      //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+      //printf("%d, %d, %f\n", i, nEle, iterationTime);
 	}
 	else if (nEle<LARGE) // omp cpu version: medium to large: medium data set
 	{
+      // only if GPU is used, copy mem back
+      if (enteredGPU) {
+          memCopyOutGPUTime = omp_get_wtime();
+          xomp_deviceDataEnvironmentExit(0);
+          enteredGPU = false;
+          memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+      };
+      iterationTime = omp_get_wtime();
 
    #pragma omp parallel for private(j) shared (nEle, si, sj, H, P) 
 	  for (j = 0; j < nEle; ++j)
@@ -334,19 +371,69 @@ int main(int argc, char* argv[]) {
 	    long long int aj = sj + j;  //  going right in horizontal
 	    similarityScore(ai, aj, H, P, &maxPos); // a critical section is used inside
 	  }
+
+      iterationTime = omp_get_wtime() - iterationTime;
+      //printf("CPU Parallel iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+      //printf("%d, %d, %f\n", i, nEle, iterationTime);
 	}
 	else // omp gpu version: large data set
         //--------------------------------------
         {
+            // only if needed, copy mem to GPU once.
+            if (!hasInitGPU) {
+                hasInitGPU = true;
+                enteredGPU = true;
+                memCopyInGPUTime = omp_get_wtime();
+                xomp_deviceDataEnvironmentEnter(0);
+                char *_dev_a;
+                int _dev_a_size[1] = {m};
+                int _dev_a_offset[1] = {0};
+                int _dev_a_Dim[1] = {m};
+                _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
+                char *_dev_b;
+                int _dev_b_size[1] = {n};
+                int _dev_b_offset[1] = {0};
+                int _dev_b_Dim[1] = {n};
+                _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
+                int *_dev_H;
+                int _dev_H_size[1] = {asz};
+                int _dev_H_offset[1] = {0};
+                int _dev_H_Dim[1] = {asz};
+                _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
+                int *_dev_P;
+                int _dev_P_size[1] = {asz};
+                int _dev_P_offset[1] = {0};
+                int _dev_P_Dim[1] = {asz};
+                _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
+                long long *_dev_maxPos_ptr;
+                int _dev_maxPos_ptr_size[1] = {1};
+                int _dev_maxPos_ptr_offset[1] = {0};
+                int _dev_maxPos_ptr_Dim[1] = {1};
+                _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
+                memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
+            };
 // choice 1: map data before the inner loop
 
-    calculate(a,  b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz) ;
+      iterationTime = omp_get_wtime();
+      calculate(a,  b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz) ;
+      iterationTime = omp_get_wtime() - iterationTime;
+      //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+      //printf("%d, %d, %f\n", i, nEle, iterationTime);
         }
       }
-    xomp_deviceDataEnvironmentExit(0);
     }
 
+    // only if GPU is used, copy mem back
+    if (enteredGPU) {
+        memCopyOutGPUTime = omp_get_wtime();
+        xomp_deviceDataEnvironmentExit(0);
+        enteredGPU = false;
+        memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+    };
+
   double finalTime = omp_get_wtime();
+  printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
+  printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
   printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
 
   initialTime = omp_get_wtime();
@@ -608,6 +695,8 @@ void backtrack(int* P, long long int maxPos) {
     //hold maxPos value
     long long int predPos;
 
+    size_t n = sizeof(P)/sizeof(P[0]);
+
     //backtrack from maxPos to startPos = 0
     do {
         if (P[maxPos] == DIAGONAL)
@@ -618,7 +707,7 @@ void backtrack(int* P, long long int maxPos) {
             predPos = maxPos - 1;
         P[maxPos] *= PATH;
         maxPos = predPos;
-    } while (P[maxPos] != NONE);
+    } while (maxPos >= 0 && maxPos < n && P[maxPos] != NONE);
 }  /* End of backtrack */
 
 /*--------------------------------------------------------------------

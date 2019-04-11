@@ -846,7 +846,7 @@ void xomp_memGatherDeviceToHost(void* dest, void* src, int* vsize, int* voffset,
   assert (ndim <= 3);
   if(ndim == 1)
   {
-     xomp_memcpyDeviceToHost((char*)dest+voffset[0]*typeSize, (char*)src, vsize[0]*typeSize);
+     xomp_memcpyDeviceToHost((char*)dest+voffset[0]*typeSize, (char*)src, (size_t)vsize[0]*typeSize);
   }
   else  if(ndim == 2)
   {
@@ -856,7 +856,7 @@ void xomp_memGatherDeviceToHost(void* dest, void* src, int* vsize, int* voffset,
      {
        offset_dest  = voffset[1] + (j + voffset[0]) * vDimSize[1];
        offset_src = j  * vsize[1];
-       xomp_memcpyDeviceToHost((char*)dest+offset_dest*typeSize, (char*)src+offset_src*typeSize, vsize[1]*typeSize);
+       xomp_memcpyDeviceToHost((char*)dest+offset_dest*typeSize, (char*)src+offset_src*typeSize, (size_t)vsize[1]*typeSize);
      } 
   }
   else  if(ndim == 3)
@@ -870,13 +870,13 @@ void xomp_memGatherDeviceToHost(void* dest, void* src, int* vsize, int* voffset,
        {
          offset_dest  += vDimSize[0];
          offset_src += vsize[0];
-         xomp_memcpyDeviceToHost((char*)dest+offset_dest*typeSize, (char*)src+offset_src*typeSize, vsize[0]*typeSize);
+         xomp_memcpyDeviceToHost((char*)dest+offset_dest*typeSize, (char*)src+offset_src*typeSize, (size_t)vsize[0]*typeSize);
        } 
      }
   }
 }
 
-void xomp_memScatterHostToDevice(void* dest, void* src, int* vsize, int* voffset, int* vDimSize, int ndim, int typeSize)
+void xomp_memScatterHostToDevice(void* dest, void* src, int* vsize, int* voffset, int* vDimSize, int ndim, size_t typeSize)
 {
   int offset_src;
   int offset_dest;
@@ -921,7 +921,7 @@ void* xomp_deviceDataEnvironmentPrepareVariable(int devID, void* original_variab
   dev_var_address = xomp_deviceDataEnvironmentGetInheritedVariable (devID, original_variable_address, typeSize, vsize);
   if (dev_var_address == NULL)
   {
-    int devSize = 1;
+    size_t devSize = 1;
     for(int i=0; i < nDim; ++i)
     {
       devSize *= vsize[i];
