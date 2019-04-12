@@ -262,7 +262,7 @@ static __managed__
         maxpos_t maxPos = 0;
 
 
-void similarityScore_sequential(long long int i, long long int j, int* H, int* P, maxpost_t* maxPos) {
+void similarityScore_sequential(long long int i, long long int j, int* H, int* P, maxpos_t* maxPos) {
 
     int up, left, diag;
 
