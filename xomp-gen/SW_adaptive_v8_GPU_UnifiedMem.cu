@@ -99,6 +99,16 @@ int matchMissmatchScore_cuda(long long i, long long j, const char* seqa, const c
     return MISSMATCH_SCORE;
 }  /* End of matchMissmatchScore_cuda */
 
+/*--------------------------------------------------------------------
+ * Function:    matchMissmatchScore
+ * Purpose:     Similarity function on the alphabet for match/missmatch
+ */
+int matchMissmatchScore(long long int i, long long int j) {
+    if (a[j - 1] == b[i - 1])
+        return MATCH_SCORE;
+    else
+        return MISSMATCH_SCORE;
+}  /* End of matchMissmatchScore */
 
 /*--------------------------------------------------------------------
  * Function:    SimilarityScore
@@ -252,7 +262,7 @@ static __managed__
         maxpos_t maxPos = 0;
 
 
-void similarityScore_sequential(long long int i, long long int j, int* H, int* P, long long int* maxPos) {
+void similarityScore_sequential(long long int i, long long int j, int* H, int* P, maxpost_t* maxPos) {
 
     int up, left, diag;
 
@@ -260,10 +270,10 @@ void similarityScore_sequential(long long int i, long long int j, int* H, int* P
     long long int index = m * i + j;
 
     //Get element above
-    up = H[index - m] + gapScore;
+    up = H[index - m] + GAP_SCORE;
 
     //Get element on the left
-    left = H[index - 1] + gapScore;
+    left = H[index - 1] + GAP_SCORE;
 
     //Get element on the diagonal
     diag = H[index - m - 1] + matchMissmatchScore(i, j);
@@ -310,7 +320,7 @@ void similarityScore_sequential(long long int i, long long int j, int* H, int* P
     }
 }
 
-void similarityScore_ompparallel(long long int i, long long int j, int* H, int* P, long long int* maxPos) {
+void similarityScore_ompparallel(long long int i, long long int j, int* H, int* P, maxpos_t * maxPos) {
 
     int up, left, diag;
 
@@ -318,18 +328,18 @@ void similarityScore_ompparallel(long long int i, long long int j, int* H, int* 
     long long int index = m * i + j;
 
     //Get element above
-    up = H[index - m] + gapScore;
+    up = H[index - m] + GAP_SCORE;
 
     //Get element on the left
-    left = H[index - 1] + gapScore;
+    left = H[index - 1] + GAP_SCORE;
 
     //Get element on the diagonal
     int t_mms;
 
     if (a[j - 1] == b[i - 1])
-        t_mms = matchScore;
+        t_mms = MATCH_SCORE;
     else
-        t_mms = missmatchScore;
+        t_mms = MISSMATCH_SCORE;
 
     diag = H[index - m - 1] + t_mms; // matchMissmatchScore(i, j);
 
@@ -504,6 +514,7 @@ int main(int argc, char* argv[])
 
         if (nEle< MEDIUM)
         {
+            int j;
             for (j = 0; j < nEle; ++j)
             {  // going upwards : anti-diagnol direction
                 long long int ai = si - j ; // going up vertically
@@ -514,6 +525,7 @@ int main(int argc, char* argv[])
         else if (nEle<LARGE) // omp cpu version: medium to large: medium data set
         {
 #pragma omp for private(j)
+            int j;
             for (j = 0; j < nEle; ++j)
             {  // going upwards : anti-diagnol direction
                 long long int ai = si - j ; // going up vertically
