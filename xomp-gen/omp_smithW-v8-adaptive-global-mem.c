@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
     printf ("Usage: %s m n\n", argv[0]);
     printf ("Using built-in data for testing ..\n");
   }
-  printf("Problem size: Matrix[%lld][%lld], Medium=%d Large=%d\n", n, m, MEDIUM, LARGE);
+//  printf("Problem size: Matrix[%lld][%lld], Medium=%d Large=%d\n", n, m, MEDIUM, LARGE);
 //#endif
 
     //Because now we have zeros
@@ -399,12 +399,12 @@ int main(int argc, char* argv[]) {
                 int _dev_H_size[1] = {asz};
                 int _dev_H_offset[1] = {0};
                 int _dev_H_Dim[1] = {asz};
-                _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
+                _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,0,1)));
                 int *_dev_P;
                 int _dev_P_size[1] = {asz};
                 int _dev_P_offset[1] = {0};
                 int _dev_P_Dim[1] = {asz};
-                _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
+                _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,0,1)));
                 long long *_dev_maxPos_ptr;
                 int _dev_maxPos_ptr_size[1] = {1};
                 int _dev_maxPos_ptr_offset[1] = {0};
@@ -432,9 +432,15 @@ int main(int argc, char* argv[]) {
     };
 
   double finalTime = omp_get_wtime();
-  printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
-  printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
-  printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
+  //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
+  //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
+  //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
+
+  if (hasInitGPU) {
+    printf("%lld, %lld, %f, %f, %f, %f\n", m-1, n-1, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
+  } else {
+    printf("%lld, %lld, %f\n", m-1, n-1, finalTime - initialTime);
+  };
 
   initialTime = omp_get_wtime();
   backtrack(P, maxPos);
@@ -442,7 +448,7 @@ int main(int argc, char* argv[]) {
 
   //Gets backtrack time
   finalTime = omp_get_wtime();
-  printf("Elapsed time for backtracking: %f\n", finalTime - initialTime);
+  //printf("Elapsed time for backtracking: %f\n", finalTime - initialTime);
 
 #ifdef DEBUG
     printf("\nSimilarity Matrix:\n");
