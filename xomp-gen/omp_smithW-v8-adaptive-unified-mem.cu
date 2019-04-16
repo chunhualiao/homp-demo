@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
     if (useBuiltInData)
         printf ("Using built-in data for testing ..\n");
 
-    printf("Problem size: Matrix[%lld][%lld], FACTOR=%d CUTOFF=%d\n", n, m, FACTOR, CUTOFF);
+    //printf("Problem size: Matrix[%lld][%lld], FACTOR=%d CUTOFF=%d\n", n, m, FACTOR, CUTOFF);
 
     // Allocates a and b
     //~ a = malloc(m * sizeof(char));
@@ -379,7 +379,7 @@ int main(int argc, char* argv[])
     a = unified_alloc<char>(m+1);
     b = unified_alloc<char>(n+1);
 
-    std::cerr << "a,b allocated: " << m << "/" << n << std::endl;
+    //std::cerr << "a,b allocated: " << m << "/" << n << std::endl;
 
     // Because now we have zeros
     m++; // \note \pp really needed???
@@ -534,7 +534,8 @@ int main(int argc, char* argv[])
 
     int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(endtime-starttime).count();
 
-    printf("\nElapsed time: %d ms\n\n", elapsed);
+    //printf("\nElapsed time: %d ms\n\n", elapsed);
+    printf("%lld, %lld, %f\n", m-1, n-1, elapsed/1000.0);
 
     // Frees similarity matrixes
     unified_free(H);
