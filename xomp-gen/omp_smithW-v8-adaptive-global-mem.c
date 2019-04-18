@@ -333,7 +333,7 @@ int main(int argc, char* argv[]) {
 
 
 	// serial version: 0 to < medium: small data set
-        if (nEle< MEDIUM)
+        if (nEle < MEDIUM)
 	{
       iterationTime = omp_get_wtime();
     // only if GPU is used, copy mem back
@@ -353,7 +353,7 @@ int main(int argc, char* argv[]) {
       //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
       //printf("%d, %d, %f\n", i, nEle, iterationTime);
 	}
-	else if (nEle<LARGE) // omp cpu version: medium to large: medium data set
+	else if (nDiag < LARGE) // omp cpu version: medium to large: medium data set
 	{
       // only if GPU is used, copy mem back
       if (enteredGPU) {
