@@ -116,12 +116,12 @@ void calculate(char *a,char *b,long long nEle,long long m,long long n,int gapSco
     int _dev_H_size[1] = {asz};
     int _dev_H_offset[1] = {0};
     int _dev_H_Dim[1] = {asz};
-    _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
+    _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,0,1)));
     int *_dev_P;
     int _dev_P_size[1] = {asz};
     int _dev_P_offset[1] = {0};
     int _dev_P_Dim[1] = {asz};
-    _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
+    _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,0,1)));
     long long *_dev_maxPos_ptr;
     int _dev_maxPos_ptr_size[1] = {1};
     int _dev_maxPos_ptr_offset[1] = {0};
