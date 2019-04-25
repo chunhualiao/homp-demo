@@ -21,7 +21,7 @@ omp_smithW-v7.1-adaptive.o: omp_smithW-v7.1-adaptive.c
 v7.out: omp_smithW-v7.1-adaptive.o rose_omp_smithW-v7.1-adaptive-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G rose_omp_smithW-v7.1-adaptive-func.cu -o v7.out -lgomp omp_smithW-v7.1-adaptive.o
 
-omp_smithW-v8-adaptive.o: omp_smithW-v8-adaptive.c
+omp_smithW-v8-adaptive-single-nEle.o: omp_smithW-v8-adaptive-single-nEle.c
 	gcc -fopenmp -g -c $^
 
 omp_smithW-v8-adaptive-global-mem.o: omp_smithW-v8-adaptive-global-mem.c
@@ -32,6 +32,9 @@ omp_smithW-v8-adaptive-unified-mem-outlined.o: omp_smithW-v8-adaptive-unified-me
 
 sw_mem_test.o : sw_mem_test.c
 	gcc -fopenmp -g -c $^
+
+v8_single.out: omp_smithW-v8-adaptive-single-nEle.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
+	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8_single.out -lgomp omp_smithW-v8-adaptive-single-nEle.o
 
 v8_gm.out: omp_smithW-v8-adaptive-global-mem.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8_gm.out -lgomp omp_smithW-v8-adaptive-global-mem.o
