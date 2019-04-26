@@ -353,7 +353,7 @@ int main(int argc, char* argv[]) {
       //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
       //printf("%d, %d, %f\n", i, nEle, iterationTime);
 	}
-	else if (nDiag < LARGE) // omp cpu version: medium to large: medium data set
+	else if (nEle < LARGE) // omp cpu version: medium to large: medium data set
 	{
       // only if GPU is used, copy mem back
       if (enteredGPU) {
@@ -441,7 +441,7 @@ int main(int argc, char* argv[]) {
   //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
   //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
 
-    printf("%lld, %lld, %lld, %f\n", m-1, n-1, LARGE, finalTime - initialTime);
+    printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m-1, n-1, LARGE, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
 /*    
   if (hasInitGPU) {
     printf("%lld, %lld, %f, %f, %f, %f\n", m-1, n-1, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
