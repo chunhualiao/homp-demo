@@ -123,8 +123,7 @@ int main(int argc, char* argv[]) {
   // thread_count is no longer used
   int thread_count;
   xomp_acc_init();
-  bool hasInitGPU = false;
-  bool enteredGPU = false;
+  bool GPUDataCopied = false;
   if (argc==3)
   {
     m = strtoll(argv[1], NULL, 10);
@@ -331,18 +330,51 @@ int main(int argc, char* argv[]) {
 	  sj = i - n + 2; // j position is the nDiag (id -n) +1 +1 // first +1 
 	}
 
+    // Copy the data for the first time GPU will be used
+    if (nEle >= LARGE && !GPUDataCopied) {
+        memCopyInGPUTime = omp_get_wtime();
+        xomp_deviceDataEnvironmentEnter(0);
+        char *_dev_a;
+        int _dev_a_size[1] = {m};
+        int _dev_a_offset[1] = {0};
+        int _dev_a_Dim[1] = {m};
+        _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
+        char *_dev_b;
+        int _dev_b_size[1] = {n};
+        int _dev_b_offset[1] = {0};
+        int _dev_b_Dim[1] = {n};
+        _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
+        int *_dev_H;
+        int _dev_H_size[1] = {asz};
+        int _dev_H_offset[1] = {0};
+        int _dev_H_Dim[1] = {asz};
+        _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,0,1)));
+        int *_dev_P;
+        int _dev_P_size[1] = {asz};
+        int _dev_P_offset[1] = {0};
+        int _dev_P_Dim[1] = {asz};
+        _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,0,1)));
+        long long *_dev_maxPos_ptr;
+        int _dev_maxPos_ptr_size[1] = {1};
+        int _dev_maxPos_ptr_offset[1] = {0};
+        int _dev_maxPos_ptr_Dim[1] = {1};
+        _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
+        memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
+        GPUDataCopied = true;
+    };
 
-	// serial version: 0 to < medium: small data set
-        if (nEle < MEDIUM)
-	{
-      iterationTime = omp_get_wtime();
-    // only if GPU is used, copy mem back
-    if (enteredGPU) {
+    // Copy data back to CPU after the last time GPU is used
+    if (GPUDataCopied && nEle < LARGE) {
+        GPUDataCopied = false;
         memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
-        enteredGPU = false;
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
+
+	// serial version: 0 to < medium: small data set
+    if (nEle < MEDIUM)
+	{
+      iterationTime = omp_get_wtime();
           for (j = 0; j < nEle; ++j) 
           {  // going upwards : anti-diagnol direction
             long long int ai = si - j ; // going up vertically
@@ -355,13 +387,6 @@ int main(int argc, char* argv[]) {
 	}
 	else if (nEle < LARGE) // omp cpu version: medium to large: medium data set
 	{
-      // only if GPU is used, copy mem back
-      if (enteredGPU) {
-          memCopyOutGPUTime = omp_get_wtime();
-          xomp_deviceDataEnvironmentExit(0);
-          enteredGPU = false;
-          memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-      };
       iterationTime = omp_get_wtime();
 
    #pragma omp parallel for private(j) shared (nEle, si, sj, H, P) 
@@ -382,39 +407,6 @@ int main(int argc, char* argv[]) {
 	else // omp gpu version: large data set
         //--------------------------------------
         {
-            // only if needed, copy mem to GPU once.
-            if (!hasInitGPU) {
-                hasInitGPU = true;
-                enteredGPU = true;
-                memCopyInGPUTime = omp_get_wtime();
-                xomp_deviceDataEnvironmentEnter(0);
-                char *_dev_a;
-                int _dev_a_size[1] = {m};
-                int _dev_a_offset[1] = {0};
-                int _dev_a_Dim[1] = {m};
-                _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
-                char *_dev_b;
-                int _dev_b_size[1] = {n};
-                int _dev_b_offset[1] = {0};
-                int _dev_b_Dim[1] = {n};
-                _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
-                int *_dev_H;
-                int _dev_H_size[1] = {asz};
-                int _dev_H_offset[1] = {0};
-                int _dev_H_Dim[1] = {asz};
-                _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,0,1)));
-                int *_dev_P;
-                int _dev_P_size[1] = {asz};
-                int _dev_P_offset[1] = {0};
-                int _dev_P_Dim[1] = {asz};
-                _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,0,1)));
-                long long *_dev_maxPos_ptr;
-                int _dev_maxPos_ptr_size[1] = {1};
-                int _dev_maxPos_ptr_offset[1] = {0};
-                int _dev_maxPos_ptr_Dim[1] = {1};
-                _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
-                memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
-            };
 // choice 1: map data before the inner loop
 
       iterationTime = omp_get_wtime();
@@ -428,13 +420,14 @@ int main(int argc, char* argv[]) {
       }
     }
 
-    // only if GPU is used, copy mem back
-    if (enteredGPU) {
+    // Copy data back to CPU after the last time GPU is used and there is no following outer loop iteration.
+    if (GPUDataCopied) {
+        GPUDataCopied = false;
         memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
-        enteredGPU = false;
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
+
 
   double finalTime = omp_get_wtime();
   //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
@@ -442,13 +435,7 @@ int main(int argc, char* argv[]) {
   //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
 
     printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m-1, n-1, LARGE, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
-/*    
-  if (hasInitGPU) {
-    printf("%lld, %lld, %f, %f, %f, %f\n", m-1, n-1, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
-  } else {
-    printf("%lld, %lld, %f\n", m-1, n-1, finalTime - initialTime);
-  };
-*/
+
   initialTime = omp_get_wtime();
   backtrack(P, maxPos);
   finalTime = omp_get_wtime();
