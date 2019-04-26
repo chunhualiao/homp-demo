@@ -299,6 +299,49 @@ int main(int argc, char *argv[]) {
     _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
 */
     {
+        // Copy the data if GPU will be used
+        if (nDiag >= OUTERLARGE) {
+            memCopyInGPUTime = omp_get_wtime();
+            xomp_deviceDataEnvironmentEnter(0);
+            char *_dev_a;
+            int _dev_a_size[1] = {m};
+            int _dev_a_offset[1] = {0};
+            int _dev_a_Dim[1] = {m};
+            _dev_a = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) a, 1, sizeof(char),
+                                                                          _dev_a_size, _dev_a_offset, _dev_a_Dim, 1,
+                                                                          0)));
+            char *_dev_b;
+            int _dev_b_size[1] = {n};
+            int _dev_b_offset[1] = {0};
+            int _dev_b_Dim[1] = {n};
+            _dev_b = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) b, 1, sizeof(char),
+                                                                          _dev_b_size, _dev_b_offset, _dev_b_Dim, 1,
+                                                                          0)));
+            int *_dev_H;
+            int _dev_H_size[1] = {asz};
+            int _dev_H_offset[1] = {0};
+            int _dev_H_Dim[1] = {asz};
+            _dev_H = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) H, 1, sizeof(int), _dev_H_size,
+                                                                         _dev_H_offset, _dev_H_Dim, 0, 1)));
+            int *_dev_P;
+            int _dev_P_size[1] = {asz};
+            int _dev_P_offset[1] = {0};
+            int _dev_P_Dim[1] = {asz};
+            _dev_P = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) P, 1, sizeof(int), _dev_P_size,
+                                                                         _dev_P_offset, _dev_P_Dim, 0, 1)));
+            long long *_dev_maxPos_ptr;
+            int _dev_maxPos_ptr_size[1] = {1};
+            int _dev_maxPos_ptr_offset[1] = {0};
+            int _dev_maxPos_ptr_Dim[1] = {1};
+            _dev_maxPos_ptr = ((long long *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) maxPos_ptr, 1,
+                                                                                        sizeof(long long),
+                                                                                        _dev_maxPos_ptr_size,
+                                                                                        _dev_maxPos_ptr_offset,
+                                                                                        _dev_maxPos_ptr_Dim, 1,
+                                                                                        1)));
+            memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
+        };
+
         for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
         {
             long long int nEle, si, sj;
@@ -330,60 +373,8 @@ int main(int argc, char *argv[]) {
             }
 
 
-            // Copy the data for the first time GPU will be used
-            if (nEle >= MEDIUM && nDiag > OUTERLARGE && !GPUDataCopied) {
-                memCopyInGPUTime = omp_get_wtime();
-                xomp_deviceDataEnvironmentEnter(0);
-                char *_dev_a;
-                int _dev_a_size[1] = {m};
-                int _dev_a_offset[1] = {0};
-                int _dev_a_Dim[1] = {m};
-                _dev_a = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) a, 1, sizeof(char),
-                                                                              _dev_a_size, _dev_a_offset, _dev_a_Dim, 1,
-                                                                              0)));
-                char *_dev_b;
-                int _dev_b_size[1] = {n};
-                int _dev_b_offset[1] = {0};
-                int _dev_b_Dim[1] = {n};
-                _dev_b = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) b, 1, sizeof(char),
-                                                                              _dev_b_size, _dev_b_offset, _dev_b_Dim, 1,
-                                                                              0)));
-                int *_dev_H;
-                int _dev_H_size[1] = {asz};
-                int _dev_H_offset[1] = {0};
-                int _dev_H_Dim[1] = {asz};
-                _dev_H = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) H, 1, sizeof(int), _dev_H_size,
-                                                                             _dev_H_offset, _dev_H_Dim, 0, 1)));
-                int *_dev_P;
-                int _dev_P_size[1] = {asz};
-                int _dev_P_offset[1] = {0};
-                int _dev_P_Dim[1] = {asz};
-                _dev_P = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) P, 1, sizeof(int), _dev_P_size,
-                                                                             _dev_P_offset, _dev_P_Dim, 0, 1)));
-                long long *_dev_maxPos_ptr;
-                int _dev_maxPos_ptr_size[1] = {1};
-                int _dev_maxPos_ptr_offset[1] = {0};
-                int _dev_maxPos_ptr_Dim[1] = {1};
-                _dev_maxPos_ptr = ((long long *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) maxPos_ptr, 1,
-                                                                                            sizeof(long long),
-                                                                                            _dev_maxPos_ptr_size,
-                                                                                            _dev_maxPos_ptr_offset,
-                                                                                            _dev_maxPos_ptr_Dim, 1,
-                                                                                            1)));
-                memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
-                GPUDataCopied = true;
-            };
-
-            // Copy data back to CPU after the last time GPU is used
-            if (GPUDataCopied && nEle < MEDIUM) {
-                GPUDataCopied = false;
-                memCopyOutGPUTime = omp_get_wtime();
-                xomp_deviceDataEnvironmentExit(0);
-                memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-            };
-
             // serial version: 0 to < medium: small data set
-            if (nEle < MEDIUM) {
+            if (nDiag < MEDIUM) {
                 iterationTime = omp_get_wtime();
                 for (j = 0; j < nEle; ++j) {  // going upwards : anti-diagnol direction
                     long long int ai = si - j; // going up vertically
@@ -418,9 +409,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Copy data back to CPU after the last time GPU is used and there is no following outer loop iteration.
-    if (GPUDataCopied) {
-        GPUDataCopied = false;
+    // Copy data back to CPU if GPU is used
+    if (nDiag >= OUTERLARGE) {
         memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
