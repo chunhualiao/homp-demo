@@ -42,7 +42,7 @@
 * Helpers
 */
 #define min(x, y) (((x) < (y)) ? (x) : (y))
-#define max(a,b) ((a) > (b) ? a : b)
+#define max(a, b) ((a) > (b) ? a : b)
 
 // #define DEBUG
 /* End of Helpers */
@@ -51,29 +51,30 @@
 
 #include <sys/time.h>
 
-double time_stamp()
-{
- struct timeval t;
- double time;
- gettimeofday(&t, NULL);
- time = t.tv_sec + 1.0e-6*t.tv_usec;
- return time;
+double time_stamp() {
+    struct timeval t;
+    double time;
+    gettimeofday(&t, NULL);
+    time = t.tv_sec + 1.0e-6 * t.tv_usec;
+    return time;
 }
 
-double omp_get_wtime()
-{
-  return time_stamp();
+double omp_get_wtime() {
+    return time_stamp();
 }
 
 #endif
-extern void calculate(char*, char*, long long int, long long int, long long int, int, int, int, long long int, long long int, int*, int*, long long int*, long long int, int); 
+
+extern void
+calculate(char *, char *, long long int, long long int, long long int, int, int, int, long long int, long long int,
+          int *, int *, long long int *, long long int, int);
 /*--------------------------------------------------------------------
  * Functions Prototypes
  */
 //#pragma omp declare target
 
 //Defines size of strings to be compared
-long long int m = 8 ; //Columns - Size of string a
+long long int m = 8; //Columns - Size of string a
 long long int n = 9;  //Lines - Size of string b
 int gapScore = -2;
 
@@ -85,17 +86,24 @@ int missmatchScore = -3;
 char *a, *b;
 
 int matchMissmatchScore(long long int i, long long int j);
-void similarityScore(long long int i, long long int j, int* H, int* P, long long int* maxPos);
+
+void similarityScore(long long int i, long long int j, int *H, int *P, long long int *maxPos);
 //#pragma omp end declare target
 
 
 // without omp critical: how to conditionalize it?
-void similarityScore2(long long int i, long long int j, int* H, int* P, long long int* maxPos);
-void backtrack(int* P, long long int maxPos);
-void printMatrix(int* matrix);
-void printPredecessorMatrix(int* matrix);
+void similarityScore2(long long int i, long long int j, int *H, int *P, long long int *maxPos);
+
+void backtrack(int *P, long long int maxPos);
+
+void printMatrix(int *matrix);
+
+void printPredecessorMatrix(int *matrix);
+
 void generate(void);
+
 long long int nElement(long long int i);
+
 void calcFirstDiagElement(long long int i, long long int *si, long long int *sj);
 
 /* End of prototypes */
@@ -104,12 +112,12 @@ void calcFirstDiagElement(long long int i, long long int *si, long long int *sj)
 /*--------------------------------------------------------------------
  * Global Variables
  */
-bool useBuiltInData=true;
+bool useBuiltInData = true;
 
 //int MEDIUM=1;
-int MEDIUM=1200;
+int MEDIUM = 1200;
 //int LARGE=2048; // max 46340 for GPU of 16GB Device memory
-int LARGE=8000; // max 46340 for GPU of 16GB Device memory
+int LARGE = 8000; // max 46340 for GPU of 16GB Device memory
 
 // the generated scoring matrix's size is m++ and n++ later to have the first row/column as 0s.
 
@@ -119,38 +127,35 @@ int LARGE=8000; // max 46340 for GPU of 16GB Device memory
  * Function:    main
  */
 extern void xomp_acc_init();
-int main(int argc, char* argv[]) {
-  // thread_count is no longer used
-  int thread_count;
-  xomp_acc_init();
-  bool hasInitGPU = false;
-  bool enteredGPU = false;
-  if (argc==3)
-  {
-    m = strtoll(argv[1], NULL, 10);
-    n = strtoll(argv[2], NULL, 10);
-    useBuiltInData = false;
-  } else if (argc == 4) 
-  {
-    m = strtoll(argv[1], NULL, 10);
-    n = strtoll(argv[2], NULL, 10);
-    LARGE = atoi(argv[3]);
-    useBuiltInData = false;
-  } else if (argc == 5) 
-  {
-    m = strtoll(argv[1], NULL, 10);
-    n = strtoll(argv[2], NULL, 10);
-    MEDIUM = strtoll(argv[3], NULL, 10);
-    LARGE = strtoll(argv[4], NULL, 10);
-    useBuiltInData = false;
-  }
+
+int main(int argc, char *argv[]) {
+    // thread_count is no longer used
+    int thread_count;
+    xomp_acc_init();
+    bool hasInitGPU = false;
+    bool enteredGPU = false;
+    if (argc == 3) {
+        m = strtoll(argv[1], NULL, 10);
+        n = strtoll(argv[2], NULL, 10);
+        useBuiltInData = false;
+    } else if (argc == 4) {
+        m = strtoll(argv[1], NULL, 10);
+        n = strtoll(argv[2], NULL, 10);
+        LARGE = atoi(argv[3]);
+        useBuiltInData = false;
+    } else if (argc == 5) {
+        m = strtoll(argv[1], NULL, 10);
+        n = strtoll(argv[2], NULL, 10);
+        MEDIUM = strtoll(argv[3], NULL, 10);
+        LARGE = strtoll(argv[4], NULL, 10);
+        useBuiltInData = false;
+    }
 
 //#ifdef DEBUG
-  if (useBuiltInData)
-  {
-    printf ("Usage: %s m n\n", argv[0]);
-    printf ("Using built-in data for testing ..\n");
-  }
+    if (useBuiltInData) {
+        printf("Usage: %s m n\n", argv[0]);
+        printf("Using built-in data for testing ..\n");
+    }
 //  printf("Problem size: Matrix[%lld][%lld], Medium=%d Large=%d\n", n, m, MEDIUM, LARGE);
 //#endif
 
@@ -159,10 +164,10 @@ int main(int argc, char* argv[]) {
     n++;
 
     //Allocates a and b
-    a = (char*) malloc(m * sizeof(char));
+    a = (char *) malloc(m * sizeof(char));
 //    printf ("debug: a's address=%p\n", a);
 
-    b = (char*) malloc(n * sizeof(char));
+    b = (char *) malloc(n * sizeof(char));
 //    printf ("debug: b's address=%p\n", b);
 
     //Allocates similarity matrix H
@@ -172,59 +177,56 @@ int main(int argc, char* argv[]) {
 
     //Allocates predecessor matrix P
     int *P;
-    P = (int *)calloc(m * n, sizeof(int));
+    P = (int *) calloc(m * n, sizeof(int));
 //    printf ("debug: P's address=%p\n", P);
 
 
-    if (useBuiltInData)
-    {
-      //Uncomment this to test the sequence available at 
-      //http://vlab.amrita.edu/?sub=3&brch=274&sim=1433&cnt=1
-      // OBS: m=11 n=7
-      // a[0] =   'C';
-      // a[1] =   'G';
-      // a[2] =   'T';
-      // a[3] =   'G';
-      // a[4] =   'A';
-      // a[5] =   'A';
-      // a[6] =   'T';
-      // a[7] =   'T';
-      // a[8] =   'C';
-      // a[9] =   'A';
-      // a[10] =  'T';
+    if (useBuiltInData) {
+        //Uncomment this to test the sequence available at
+        //http://vlab.amrita.edu/?sub=3&brch=274&sim=1433&cnt=1
+        // OBS: m=11 n=7
+        // a[0] =   'C';
+        // a[1] =   'G';
+        // a[2] =   'T';
+        // a[3] =   'G';
+        // a[4] =   'A';
+        // a[5] =   'A';
+        // a[6] =   'T';
+        // a[7] =   'T';
+        // a[8] =   'C';
+        // a[9] =   'A';
+        // a[10] =  'T';
 
-      // b[0] =   'G';
-      // b[1] =   'A';
-      // b[2] =   'C';
-      // b[3] =   'T';
-      // b[4] =   'T';
-      // b[5] =   'A';
-      // b[6] =   'C';
-      // https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm#Example
-      // Using the wiki example to verify the results
-      b[0] =   'G';
-      b[1] =   'G';
-      b[2] =   'T';
-      b[3] =   'T';
-      b[4] =   'G';
-      b[5] =   'A';
-      b[6] =   'C';
-      b[7] =   'T';
-      b[8] =   'A';
+        // b[0] =   'G';
+        // b[1] =   'A';
+        // b[2] =   'C';
+        // b[3] =   'T';
+        // b[4] =   'T';
+        // b[5] =   'A';
+        // b[6] =   'C';
+        // https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm#Example
+        // Using the wiki example to verify the results
+        b[0] = 'G';
+        b[1] = 'G';
+        b[2] = 'T';
+        b[3] = 'T';
+        b[4] = 'G';
+        b[5] = 'A';
+        b[6] = 'C';
+        b[7] = 'T';
+        b[8] = 'A';
 
-      a[0] =   'T';
-      a[1] =   'G';
-      a[2] =   'T';
-      a[3] =   'T';
-      a[4] =   'A';
-      a[5] =   'C';
-      a[6] =   'G';
-      a[7] =   'G';
-    }
-    else
-    {
-      //Gen random arrays a and b
-      generate();
+        a[0] = 'T';
+        a[1] = 'G';
+        a[2] = 'T';
+        a[3] = 'T';
+        a[4] = 'A';
+        a[5] = 'C';
+        a[6] = 'G';
+        a[7] = 'G';
+    } else {
+        //Gen random arrays a and b
+        generate();
     }
 
     //Start position for backtrack
@@ -266,11 +268,11 @@ int main(int argc, char* argv[]) {
 
     // mistake: element count, not byte size!!
     // int asz= m*n*sizeof(int);
-    int asz= m*n;
+    int asz = m * n;
 // choice 2: map data before the outer loop
 //#pragma omp target map (to:a[0:m], b[0:n], nDiag, m,n,gapScore, matchScore, missmatchScore) map(tofrom: H[0:asz], P[0:asz], maxPos)
 //  #pragma omp parallel default(none) shared(H, P, maxPos, nDiag, j) private(i)
-	    long long int *maxPos_ptr = &maxPos;
+    long long int *maxPos_ptr = &maxPos;
     /*
 	xomp_deviceDataEnvironmentEnter(0);
     char *_dev_a;
@@ -300,127 +302,132 @@ int main(int argc, char* argv[]) {
     _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
 */
     {
-      for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
-      {
-        long long int nEle, si, sj;
-       //  nEle = nElement(i);
-	//---------------inlined ------------
-	if (i < m && i < n) { // smaller than both directions
-	  //Number of elements in the diagonal is increasing
-	  nEle = i;
-	}
-	else if (i < max(m, n)) { // smaller than only one direction
-	  //Number of elements in the diagonal is stable
-	  long int min = min(m, n);  // the longer direction has the edge elements, the number is the smaller direction's size
-	  nEle = min - 1;
-	}
-	else {
-	  //Number of elements in the diagonal is decreasing
-	  long int min = min(m, n);
-	  nEle = 2 * min - i + llabs(m - n) - 2;
-	}
-
-        //calcFirstDiagElement(i, &si, &sj);
-	//------------inlined---------------------
-	// Calculate the first element of diagonal
-	if (i < n) { // smaller than row count
-	  si = i;
-	  sj = 1; // start from the j==1 since j==0 is the padding
-	} else {  // now we sweep horizontally at the bottom of the matrix
-	  si = n - 1;  // i is fixed
-	  sj = i - n + 2; // j position is the nDiag (id -n) +1 +1 // first +1 
-	}
-
-
-	// serial version: 0 to < medium: small data set
-        if (nDiag < MEDIUM)
-	{
-      iterationTime = omp_get_wtime();
-    // only if GPU is used, copy mem back
-    if (enteredGPU) {
-        memCopyOutGPUTime = omp_get_wtime();
-        xomp_deviceDataEnvironmentExit(0);
-        enteredGPU = false;
-        memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-    };
-          for (j = 0; j < nEle; ++j) 
-          {  // going upwards : anti-diagnol direction
-            long long int ai = si - j ; // going up vertically
-            long long int aj = sj + j;  //  going right in horizontal
-            similarityScore2(ai, aj, H, P, &maxPos); // a specialized version without a critical section used inside
-          }
-      iterationTime = omp_get_wtime() - iterationTime;
-      //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-      //printf("%d, %d, %f\n", i, nEle, iterationTime);
-	}
-	else if (nDiag < LARGE) // omp cpu version: medium to large: medium data set
-	{
-      // only if GPU is used, copy mem back
-      if (enteredGPU) {
-          memCopyOutGPUTime = omp_get_wtime();
-          xomp_deviceDataEnvironmentExit(0);
-          enteredGPU = false;
-          memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-      };
-      iterationTime = omp_get_wtime();
-
-   #pragma omp parallel for private(j) shared (nEle, si, sj, H, P) 
-	  for (j = 0; j < nEle; ++j)
-	  {  // going upwards : anti-diagnol direction
-	    long long int ai = si - j ; // going up vertically
-	    long long int aj = sj + j;  //  going right in horizontal
-	    similarityScore(ai, aj, H, P, &maxPos); // a critical section is used inside
-	  }
-
-      iterationTime = omp_get_wtime() - iterationTime;
-      //printf("CPU Parallel iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-      //printf("%d, %d, %f\n", i, nEle, iterationTime);
-	}
-	else // omp gpu version: large data set
-        //--------------------------------------
+        for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
         {
-            // only if needed, copy mem to GPU once.
-            if (!hasInitGPU) {
-                hasInitGPU = true;
-                enteredGPU = true;
-                memCopyInGPUTime = omp_get_wtime();
-                xomp_deviceDataEnvironmentEnter(0);
-                char *_dev_a;
-                int _dev_a_size[1] = {m};
-                int _dev_a_offset[1] = {0};
-                int _dev_a_Dim[1] = {m};
-                _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
-                char *_dev_b;
-                int _dev_b_size[1] = {n};
-                int _dev_b_offset[1] = {0};
-                int _dev_b_Dim[1] = {n};
-                _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
-                int *_dev_H;
-                int _dev_H_size[1] = {asz};
-                int _dev_H_offset[1] = {0};
-                int _dev_H_Dim[1] = {asz};
-                _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,0,1)));
-                int *_dev_P;
-                int _dev_P_size[1] = {asz};
-                int _dev_P_offset[1] = {0};
-                int _dev_P_Dim[1] = {asz};
-                _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,0,1)));
-                long long *_dev_maxPos_ptr;
-                int _dev_maxPos_ptr_size[1] = {1};
-                int _dev_maxPos_ptr_offset[1] = {0};
-                int _dev_maxPos_ptr_Dim[1] = {1};
-                _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
-                memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
-            };
+            long long int nEle, si, sj;
+            //  nEle = nElement(i);
+            //---------------inlined ------------
+            if (i < m && i < n) { // smaller than both directions
+                //Number of elements in the diagonal is increasing
+                nEle = i;
+            } else if (i < max(m, n)) { // smaller than only one direction
+                //Number of elements in the diagonal is stable
+                long int min = min(m,
+                                   n);  // the longer direction has the edge elements, the number is the smaller direction's size
+                nEle = min - 1;
+            } else {
+                //Number of elements in the diagonal is decreasing
+                long int min = min(m, n);
+                nEle = 2 * min - i + llabs(m - n) - 2;
+            }
+
+            //calcFirstDiagElement(i, &si, &sj);
+            //------------inlined---------------------
+            // Calculate the first element of diagonal
+            if (i < n) { // smaller than row count
+                si = i;
+                sj = 1; // start from the j==1 since j==0 is the padding
+            } else {  // now we sweep horizontally at the bottom of the matrix
+                si = n - 1;  // i is fixed
+                sj = i - n + 2; // j position is the nDiag (id -n) +1 +1 // first +1
+            }
+
+
+            // serial version: 0 to < medium: small data set
+            if (nDiag < MEDIUM) {
+                iterationTime = omp_get_wtime();
+                // only if GPU is used, copy mem back
+                if (enteredGPU) {
+                    memCopyOutGPUTime = omp_get_wtime();
+                    xomp_deviceDataEnvironmentExit(0);
+                    enteredGPU = false;
+                    memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+                };
+                for (j = 0; j < nEle; ++j) {  // going upwards : anti-diagnol direction
+                    long long int ai = si - j; // going up vertically
+                    long long int aj = sj + j;  //  going right in horizontal
+                    similarityScore2(ai, aj, H, P,
+                                     &maxPos); // a specialized version without a critical section used inside
+                }
+                iterationTime = omp_get_wtime() - iterationTime;
+                //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+                //printf("%d, %d, %f\n", i, nEle, iterationTime);
+            } else if (nDiag < LARGE) {// omp cpu version: medium to large: medium data set
+                // only if GPU is used, copy mem back
+                if (enteredGPU) {
+                    memCopyOutGPUTime = omp_get_wtime();
+                    xomp_deviceDataEnvironmentExit(0);
+                    enteredGPU = false;
+                    memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+                };
+                iterationTime = omp_get_wtime();
+
+#pragma omp parallel for private(j) shared (nEle, si, sj, H, P)
+                for (j = 0; j < nEle; ++j) {  // going upwards : anti-diagnol direction
+                    long long int ai = si - j; // going up vertically
+                    long long int aj = sj + j;  //  going right in horizontal
+                    similarityScore(ai, aj, H, P, &maxPos); // a critical section is used inside
+                }
+
+                iterationTime = omp_get_wtime() - iterationTime;
+                //printf("CPU Parallel iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+                //printf("%d, %d, %f\n", i, nEle, iterationTime);
+            } else {// omp gpu version: large data set
+                // only if needed, copy mem to GPU once.
+                if (!hasInitGPU) {
+                    hasInitGPU = true;
+                    enteredGPU = true;
+                    memCopyInGPUTime = omp_get_wtime();
+                    xomp_deviceDataEnvironmentEnter(0);
+                    char *_dev_a;
+                    int _dev_a_size[1] = {m};
+                    int _dev_a_offset[1] = {0};
+                    int _dev_a_Dim[1] = {m};
+                    _dev_a = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) a, 1, sizeof(char),
+                                                                                  _dev_a_size, _dev_a_offset,
+                                                                                  _dev_a_Dim, 1, 0)));
+                    char *_dev_b;
+                    int _dev_b_size[1] = {n};
+                    int _dev_b_offset[1] = {0};
+                    int _dev_b_Dim[1] = {n};
+                    _dev_b = ((char *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) b, 1, sizeof(char),
+                                                                                  _dev_b_size, _dev_b_offset,
+                                                                                  _dev_b_Dim, 1, 0)));
+                    int *_dev_H;
+                    int _dev_H_size[1] = {asz};
+                    int _dev_H_offset[1] = {0};
+                    int _dev_H_Dim[1] = {asz};
+                    _dev_H = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) H, 1, sizeof(int),
+                                                                                 _dev_H_size, _dev_H_offset, _dev_H_Dim,
+                                                                                 0, 1)));
+                    int *_dev_P;
+                    int _dev_P_size[1] = {asz};
+                    int _dev_P_offset[1] = {0};
+                    int _dev_P_Dim[1] = {asz};
+                    _dev_P = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) P, 1, sizeof(int),
+                                                                                 _dev_P_size, _dev_P_offset, _dev_P_Dim,
+                                                                                 0, 1)));
+                    long long *_dev_maxPos_ptr;
+                    int _dev_maxPos_ptr_size[1] = {1};
+                    int _dev_maxPos_ptr_offset[1] = {0};
+                    int _dev_maxPos_ptr_Dim[1] = {1};
+                    _dev_maxPos_ptr = ((long long *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) maxPos_ptr,
+                                                                                                1, sizeof(long long),
+                                                                                                _dev_maxPos_ptr_size,
+                                                                                                _dev_maxPos_ptr_offset,
+                                                                                                _dev_maxPos_ptr_Dim, 1,
+                                                                                                1)));
+                    memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
+                };
 // choice 1: map data before the inner loop
 
-      iterationTime = omp_get_wtime();
-      calculate(a,  b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz) ;
-      iterationTime = omp_get_wtime() - iterationTime;
-      //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-      //printf("%d, %d, %f\n", i, nEle, iterationTime);
+                iterationTime = omp_get_wtime();
+                calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz);
+                iterationTime = omp_get_wtime() - iterationTime;
+                //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
+                //printf("%d, %d, %f\n", i, nEle, iterationTime);
+            }
         }
-      }
     }
 
     // only if GPU is used, copy mem back
@@ -431,24 +438,25 @@ int main(int argc, char* argv[]) {
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
 
-  double finalTime = omp_get_wtime();
-  //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
-  //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
-  //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
+    double finalTime = omp_get_wtime();
+    //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
+    //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
+    //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
 
-  if (hasInitGPU) {
-    printf("%lld, %lld, %f, %f, %f, %f\n", m-1, n-1, finalTime - initialTime, memCopyInGPUTime, memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
-  } else {
-    printf("%lld, %lld, %f\n", m-1, n-1, finalTime - initialTime);
-  };
+    if (hasInitGPU) {
+        printf("%lld, %lld, %f, %f, %f, %f\n", m - 1, n - 1, finalTime - initialTime, memCopyInGPUTime,
+               memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
+    } else {
+        printf("%lld, %lld, %f\n", m - 1, n - 1, finalTime - initialTime);
+    };
 
-  initialTime = omp_get_wtime();
-  backtrack(P, maxPos);
-  finalTime = omp_get_wtime();
+    initialTime = omp_get_wtime();
+    backtrack(P, maxPos);
+    finalTime = omp_get_wtime();
 
-  //Gets backtrack time
-  finalTime = omp_get_wtime();
-  //printf("Elapsed time for backtracking: %f\n", finalTime - initialTime);
+    //Gets backtrack time
+    finalTime = omp_get_wtime();
+    //printf("Elapsed time for backtracking: %f\n", finalTime - initialTime);
 
 #ifdef DEBUG
     printf("\nSimilarity Matrix:\n");
@@ -458,10 +466,9 @@ int main(int argc, char* argv[]) {
     printPredecessorMatrix(P);
 #endif
 
-    if (useBuiltInData)
-    {
-      printf ("Verifying results using the builtinIn data: %s\n", (H[n*m-1]==7)?"true":"false");
-      assert (H[n*m-1]==7);
+    if (useBuiltInData) {
+        printf("Verifying results using the builtinIn data: %s\n", (H[n * m - 1] == 7) ? "true" : "false");
+        assert(H[n * m - 1] == 7);
     }
 
     //Frees similarity matrixes
@@ -484,13 +491,12 @@ long long int nElement(long long int i) {
     if (i < m && i < n) { // smaller than both directions
         //Number of elements in the diagonal is increasing
         return i;
-    }
-    else if (i < max(m, n)) { // smaller than only one direction
+    } else if (i < max(m, n)) { // smaller than only one direction
         //Number of elements in the diagonal is stable
-        long int min = min(m, n);  // the longer direction has the edge elements, the number is the smaller direction's size
+        long int min = min(m,
+                           n);  // the longer direction has the edge elements, the number is the smaller direction's size
         return min - 1;
-    }
-    else {
+    } else {
         //Number of elements in the diagonal is decreasing
         long int min = min(m, n);
         return 2 * min - i + llabs(m - n) - 2;
@@ -552,7 +558,7 @@ Then we have the first elements like
  *             int *P; the predecessor array,storing which of the three elements is picked with max value
  */
 // #pragma omp declare target
-void similarityScore(long long int i, long long int j, int* H, int* P, long long int* maxPos_ptr) {
+void similarityScore(long long int i, long long int j, int *H, int *P, long long int *maxPos_ptr) {
 
     //long long int *maxPos_ptr = &maxPos;
     int up, left, diag;
@@ -568,7 +574,7 @@ void similarityScore(long long int i, long long int j, int* H, int* P, long long
 
     //Get element on the diagonal
     int t_mms;
-    
+
     if (a[j - 1] == b[i - 1])
         t_mms = matchScore;
     else
@@ -634,7 +640,7 @@ int matchMissmatchScore(long long int i, long long int j) {
 
 //#pragma omp end declare target
 
-void similarityScore2(long long int i, long long int j, int* H, int* P, long long int* maxPos) {
+void similarityScore2(long long int i, long long int j, int *H, int *P, long long int *maxPos) {
 
     int up, left, diag;
 
@@ -697,11 +703,11 @@ void similarityScore2(long long int i, long long int j, int* H, int* P, long lon
  * Function:    backtrack
  * Purpose:     Modify matrix to print, path change from value to PATH
  */
-void backtrack(int* P, long long int maxPos) {
+void backtrack(int *P, long long int maxPos) {
     //hold maxPos value
     long long int predPos;
 
-    size_t n = sizeof(P)/sizeof(P[0]);
+    size_t n = sizeof(P) / sizeof(P[0]);
 
     //backtrack from maxPos to startPos = 0
     do {
@@ -720,16 +726,16 @@ void backtrack(int* P, long long int maxPos) {
  * Function:    printMatrix
  * Purpose:     Print Matrix
  */
-void printMatrix(int* matrix) {
+void printMatrix(int *matrix) {
     long long int i, j;
     printf("-\t-\t");
-    for (j = 0; j < m-1; j++) {
-    	printf("%c\t", a[j]);
+    for (j = 0; j < m - 1; j++) {
+        printf("%c\t", a[j]);
     }
     printf("\n-\t");
     for (i = 0; i < n; i++) { //Lines
-        for (j = 0; j < m; j++) {  
-        	if (j==0 && i>0) printf("%c\t", b[i-1]);
+        for (j = 0; j < m; j++) {
+            if (j == 0 && i > 0) printf("%c\t", b[i - 1]);
             printf("%d\t", matrix[m * i + j]);
         }
         printf("\n");
@@ -741,16 +747,16 @@ void printMatrix(int* matrix) {
  * Function:    printPredecessorMatrix
  * Purpose:     Print predecessor matrix
  */
-void printPredecessorMatrix(int* matrix) {
+void printPredecessorMatrix(int *matrix) {
     long long int i, j, index;
     printf("    ");
-    for (j = 0; j < m-1; j++) {
-    	printf("%c ", a[j]);
+    for (j = 0; j < m - 1; j++) {
+        printf("%c ", a[j]);
     }
     printf("\n  ");
     for (i = 0; i < n; i++) { //Lines
         for (j = 0; j < m; j++) {
-        	if (j==0 && i>0) printf("%c ", b[i-1]);
+            if (j == 0 && i > 0) printf("%c ", b[i - 1]);
             index = m * i + j;
             if (matrix[index] < 0) {
                 printf(BOLDRED);
