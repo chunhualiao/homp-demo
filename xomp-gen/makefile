@@ -30,6 +30,9 @@ omp_smithW-v8.3-adaptive-global-mem.o: omp_smithW-v8.3-adaptive-global-mem.c
 omp_smithW-v8.3.2-adaptive-global-mem.o: omp_smithW-v8.3.2-adaptive-global-mem.c
 	gcc -fopenmp -g -c $^
 
+omp_smithW-v8.3.4-adaptive-global-mem-num_threads.o: omp_smithW-v8.3.4-adaptive-global-mem-num_threads.c
+	gcc -fopenmp -g -c $^
+
 omp_smithW-v8-adaptive-unified-mem-outlined.o: omp_smithW-v8-adaptive-unified-mem-outlined.c
 	gcc -fopenmp -g -c $^
 
@@ -41,6 +44,9 @@ v8.3_gm.out: omp_smithW-v8.3-adaptive-global-mem.o omp_smithW-v8-adaptive-gm-fun
 
 v8.3.2_gm.out: omp_smithW-v8.3.2-adaptive-global-mem.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8.3.2_gm.out -lgomp omp_smithW-v8.3.2-adaptive-global-mem.o
+
+v8.3.4_gm.out: omp_smithW-v8.3.4-adaptive-global-mem-num_threads.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
+	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8.3.4_gm.out -lgomp omp_smithW-v8.3.4-adaptive-global-mem-num_threads.o
 
 v8_um.out: omp_smithW-v8-adaptive-unified-mem-outlined.o xomp_cuda_lib.cu omp_smithW-v8-adaptive-unified-mem.cu
 	nvcc -g -G omp_smithW-v8-adaptive-unified-mem.cu -o v8_um.out -lgomp omp_smithW-v8-adaptive-unified-mem-outlined.o
