@@ -7,5 +7,5 @@
 
 for i in {100..45000..100}
   do 
-    ./v8_um.out $i $i $1 $2
+   KMP_AFFINITY=compact numactl --cpunodebind=0 --membind=0 ./v8_um.out $i $i $1 $2
  done
