@@ -164,17 +164,13 @@ int main(int argc, char *argv[]) {
         useBuiltInData = false;
     }
 
-    printf("Usage: <a.out> [m] [n] [MEDIUM] [OUTERLARGE] [minChunk] [maxNumThreads]\n");
-    printf("\tMINIMUM is not used, OUTLARGE is used to switching between CPU and GPU\n");
-    printf("\tminChunk is the minimum chunksize used to calcuate the num of threads for OpenMP parallel\n");
-    printf("\tif minChunk is given as 0, meaning use constant number of threads for OpenMP parallel\n");
-    printf("\tmaxNumThreads is for setting the number of threads for OpenMP parallel\n");
-
-
 //#ifdef DEBUG
     if (useBuiltInData) {
-        printf("Usage: %s m n\n", argv[0]);
-        printf("Using built-in data for testing ..\n");
+        printf("Usage: <a.out> [m] [n] [MEDIUM] [OUTERLARGE] [minChunk] [maxNumThreads]\n");
+        printf("\tMINIMUM is not used, OUTLARGE is used to switching between CPU and GPU\n");
+        printf("\tminChunk is the minimum chunksize used to calcuate the num of threads for OpenMP parallel\n");
+        printf("\tif minChunk is given as 0, meaning use constant number of threads for OpenMP parallel\n");
+        printf("\tmaxNumThreads is for setting the number of threads for OpenMP parallel\n");
     }
 //  printf("Problem size: Matrix[%lld][%lld], Medium=%d Large=%d\n", n, m, MEDIUM, LARGE);
 //#endif
