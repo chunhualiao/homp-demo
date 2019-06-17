@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 #endif
 */
     //Gets Initial time
-    double initialTime = omp_get_wtime();
+    //double initialTime = omp_get_wtime();
 
     // time measurements for each iteration of outer loop.
     double iterationTime;
@@ -298,41 +298,9 @@ int main(int argc, char *argv[]) {
     int _dev_maxPos_ptr_Dim[1] = {1};
     _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
 */
-    {
-        for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
-        {
-            long long int nEle, si, sj;
-            //  nEle = nElement(i);
-            //---------------inlined ------------
-            if (i < m && i < n) { // smaller than both directions
-                //Number of elements in the diagonal is increasing
-                nEle = i;
-            } else if (i < max(m, n)) { // smaller than only one direction
-                //Number of elements in the diagonal is stable
-                long int min = min(m,
-                                   n);  // the longer direction has the edge elements, the number is the smaller direction's size
-                nEle = min - 1;
-            } else {
-                //Number of elements in the diagonal is decreasing
-                long int min = min(m, n);
-                nEle = 2 * min - i + llabs(m - n) - 2;
-            }
-
-            //calcFirstDiagElement(i, &si, &sj);
-            //------------inlined---------------------
-            // Calculate the first element of diagonal
-            if (i < n) { // smaller than row count
-                si = i;
-                sj = 1; // start from the j==1 since j==0 is the padding
-            } else {  // now we sweep horizontally at the bottom of the matrix
-                si = n - 1;  // i is fixed
-                sj = i - n + 2; // j position is the nDiag (id -n) +1 +1 // first +1
-            }
-
-
             // Copy the data for the first time GPU will be used
-            if (nEle >= MEDIUM && nDiag > OUTERLARGE && !GPUDataCopied) {
-                memCopyInGPUTime = omp_get_wtime();
+            //if (nEle >= MEDIUM && nDiag > OUTERLARGE && !GPUDataCopied) {
+                //memCopyInGPUTime = omp_get_wtime();
                 xomp_deviceDataEnvironmentEnter(0);
                 char *_dev_a;
                 int _dev_a_size[1] = {m};
@@ -370,76 +338,76 @@ int main(int argc, char *argv[]) {
                                                                                             _dev_maxPos_ptr_offset,
                                                                                             _dev_maxPos_ptr_Dim, 1,
                                                                                             1)));
-                memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
+                //memCopyInGPUTime = omp_get_wtime() - memCopyInGPUTime;
                 GPUDataCopied = true;
-            };
+            //};
 
-            // Copy data back to CPU after the last time GPU is used
-            if (GPUDataCopied && nEle < MEDIUM) {
-                GPUDataCopied = false;
-                memCopyOutGPUTime = omp_get_wtime();
-                xomp_deviceDataEnvironmentExit(0);
-                memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-            };
+    {
+        for (i = 1; i <= nDiag; ++i) // start from 1 since 0 is the boundary padding
+        {
+            long long int nEle, si, sj;
+            //  nEle = nElement(i);
+            //---------------inlined ------------
+            if (i < m && i < n) { // smaller than both directions
+                //Number of elements in the diagonal is increasing
+                nEle = i;
+            } else if (i < max(m, n)) { // smaller than only one direction
+                //Number of elements in the diagonal is stable
+                long int min = min(m,
+                                   n);  // the longer direction has the edge elements, the number is the smaller direction's size
+                nEle = min - 1;
+            } else {
+                //Number of elements in the diagonal is decreasing
+                long int min = min(m, n);
+                nEle = 2 * min - i + llabs(m - n) - 2;
+            }
 
-            // serial version: 0 to < medium: small data set
-            if (nEle < MEDIUM) {
-                iterationTime = omp_get_wtime();
-                for (j = 0; j < nEle; ++j) {  // going upwards : anti-diagnol direction
-                    long long int ai = si - j; // going up vertically
-                    long long int aj = sj + j;  //  going right in horizontal
-                    similarityScore2(ai, aj, H, P,
-                                     &maxPos); // a specialized version without a critical section used inside
-                }
-                iterationTime = omp_get_wtime() - iterationTime;
-                //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-                //printf("%d, %d, %f\n", i, nEle, iterationTime);
-            } else if (nDiag < OUTERLARGE) { // omp cpu version: medium to large: medium data set
-                iterationTime = omp_get_wtime();
-#pragma omp parallel for private(j) shared (nEle, si, sj, H, P)
-                for (j = 0; j < nEle; ++j) {  // going upwards : anti-diagnol direction
-                    long long int ai = si - j; // going up vertically
-                    long long int aj = sj + j;  //  going right in horizontal
-                    similarityScore(ai, aj, H, P, &maxPos); // a critical section is used inside
-                }
+            //calcFirstDiagElement(i, &si, &sj);
+            //------------inlined---------------------
+            // Calculate the first element of diagonal
+            if (i < n) { // smaller than row count
+                si = i;
+                sj = 1; // start from the j==1 since j==0 is the padding
+            } else {  // now we sweep horizontally at the bottom of the matrix
+                si = n - 1;  // i is fixed
+                sj = i - n + 2; // j position is the nDiag (id -n) +1 +1 // first +1
+            }
 
-                iterationTime = omp_get_wtime() - iterationTime;
-                //printf("CPU Parallel iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-                //printf("%d, %d, %f\n", i, nEle, iterationTime);
-            } else { // omp gpu version: large data set
+
+
 // choice 1: map data before the inner loop
 
-                iterationTime = omp_get_wtime();
+                //iterationTime = omp_get_wtime();
                 calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz);
-                iterationTime = omp_get_wtime() - iterationTime;
+                //iterationTime = omp_get_wtime() - iterationTime;
                 //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
                 //printf("%d, %d, %f\n", i, nEle, iterationTime);
-            }
+            //}
         }
     }
 
     // Copy data back to CPU after the last time GPU is used and there is no following outer loop iteration.
-    if (GPUDataCopied) {
+    //if (GPUDataCopied) {
         GPUDataCopied = false;
-        memCopyOutGPUTime = omp_get_wtime();
+        //memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
-        memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
-    };
+        //memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+    //};
 
-    double finalTime = omp_get_wtime();
+    //double finalTime = omp_get_wtime();
     //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
     //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
     //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
 
-    printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m - 1, n - 1, OUTERLARGE, finalTime - initialTime, memCopyInGPUTime,
-           memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
+    //printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m - 1, n - 1, OUTERLARGE, finalTime - initialTime, memCopyInGPUTime,
+     //      memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
 
-    initialTime = omp_get_wtime();
+    //initialTime = omp_get_wtime();
     backtrack(P, maxPos);
-    finalTime = omp_get_wtime();
+    //finalTime = omp_get_wtime();
 
     //Gets backtrack time
-    finalTime = omp_get_wtime();
+    //finalTime = omp_get_wtime();
     //printf("Elapsed time for backtracking: %f\n", finalTime - initialTime);
 
 #ifdef DEBUG

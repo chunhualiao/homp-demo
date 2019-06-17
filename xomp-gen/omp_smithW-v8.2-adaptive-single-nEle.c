@@ -349,13 +349,13 @@ int main(int argc, char* argv[]) {
               int _dev_H_offset[1] = {0};
               int _dev_H_Dim[1] = {asz};
               _dev_H = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) H, 1, sizeof(int), _dev_H_size,
-                                                                           _dev_H_offset, _dev_H_Dim, 0, 1)));
+                                                                           _dev_H_offset, _dev_H_Dim, 1, 1)));
               int *_dev_P;
               int _dev_P_size[1] = {asz};
               int _dev_P_offset[1] = {0};
               int _dev_P_Dim[1] = {asz};
               _dev_P = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) P, 1, sizeof(int), _dev_P_size,
-                                                                           _dev_P_offset, _dev_P_Dim, 0, 1)));
+                                                                           _dev_P_offset, _dev_P_Dim, 1, 1)));
               long long *_dev_maxPos_ptr;
               int _dev_maxPos_ptr_size[1] = {1};
               int _dev_maxPos_ptr_offset[1] = {0};
@@ -388,6 +388,9 @@ int main(int argc, char* argv[]) {
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("CPU Sequential iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
               //printf("%d, %d, %f\n", i, nEle, iterationTime);
+              //if (i%600 == 0) {
+              //  printf("%d, %d, %f\n", i, nEle, iterationTime);
+              //};
           } else if (nEle < LARGE) { // omp cpu version: medium to large: medium data set
               iterationTime = omp_get_wtime();
 #pragma omp parallel for private(j) shared (nEle, si, sj, H, P)
@@ -399,8 +402,8 @@ int main(int argc, char* argv[]) {
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("CPU Parallel iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
               //printf("%d, %d, %f\n", i, nEle, iterationTime);
-              //if (nEle%500 == 0) {
-              //printf("%d, %d, %f\n", i, nEle, iterationTime);
+              //if (i%600 == 0) {
+              //  printf("%d, %d, %f\n", i, nEle, iterationTime);
               //};
           } else {// omp gpu version: large data set
 // choice 1: map data before the inner loop
@@ -408,8 +411,8 @@ int main(int argc, char* argv[]) {
               calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, H, P, maxPos_ptr, j, asz);
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
-              //if (nEle%500 == 0) {
-              //printf("%d, %d, %f\n", i, nEle, iterationTime);
+              //if (i%600 == 0) {
+              //  printf("%d, %d, %f\n", i, nEle, iterationTime);
               //};
           }
       }

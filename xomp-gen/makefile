@@ -37,11 +37,29 @@ omp_smithW-v8-adaptive-unified-mem-outlined.o: omp_smithW-v8-adaptive-unified-me
 	clang -fopenmp -g -c $^
 	#gcc -fopenmp -g -c $^
 
-omp_smithW-v8-adaptive-unified-mem-outlined.o: omp_smithW-v8-adaptive-unified-mem-outlined.c
-	gcc -fopenmp -g -c $^
+#omp_smithW-v8-adaptive-unified-mem-outlined.o: omp_smithW-v8-adaptive-unified-mem-outlined.c
+#	gcc -fopenmp -g -c $^
 
 v8.2_single.out: omp_smithW-v8.2-adaptive-single-nEle.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8.2_single.out -lgomp omp_smithW-v8.2-adaptive-single-nEle.o
+
+sw_s1.out: sw_serial_case1.c
+	gcc -fopenmp $^ -o sw_s1.out
+
+sw_p1.out: sw_cpu_parallel_case1.c
+	gcc -fopenmp $^ -o sw_p1.out
+ 
+sw_g1.o: sw_gpu_case1.c
+	gcc -fopenmp -g -c $^ -o sw_g1.o
+ 
+sw_g1.out: sw_g1.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
+	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o sw_g1.out -lgomp sw_g1.o
+
+sw_adaptive_gm_case1.o: sw_adaptive_gm_case1.c
+	gcc -fopenmp -g -c $^
+
+sw_a1.out: sw_adaptive_gm_case1.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
+	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o sw_a1.out -lgomp sw_adaptive_gm_case1.o
 
 v8.3_gm.out: omp_smithW-v8.3-adaptive-global-mem.o omp_smithW-v8-adaptive-gm-func.cu xomp_cuda_lib.cu
 	nvcc xomp_cuda_lib.cu -g -G omp_smithW-v8-adaptive-gm-func.cu -o v8.3_gm.out -lgomp omp_smithW-v8.3-adaptive-global-mem.o
