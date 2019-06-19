@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 #endif
 */
     //Gets Initial time
-    //double initialTime = omp_get_wtime();
+    double initialTime = omp_get_wtime();
 
     // time measurements for each iteration of outer loop.
     double iterationTime;
@@ -354,10 +354,11 @@ int main(int argc, char *argv[]) {
     }
 
 
-    //double finalTime = omp_get_wtime();
+    double finalTime = omp_get_wtime();
     //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
     //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
     //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
+    printf("%f\n", finalTime - initialTime);
 
     //printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m - 1, n - 1, OUTERLARGE, finalTime - initialTime, memCopyInGPUTime,
            //memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);

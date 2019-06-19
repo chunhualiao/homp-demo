@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 #endif
 */
     //Gets Initial time
-    //double initialTime = omp_get_wtime();
+    double initialTime = omp_get_wtime();
 
     // time measurements for each iteration of outer loop.
     double iterationTime;
@@ -322,13 +322,13 @@ int main(int argc, char *argv[]) {
             int _dev_H_offset[1] = {0};
             int _dev_H_Dim[1] = {asz};
             _dev_H = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) H, 1, sizeof(int), _dev_H_size,
-                                                                         _dev_H_offset, _dev_H_Dim, 0, 1)));
+                                                                         _dev_H_offset, _dev_H_Dim, 1, 1)));
             int *_dev_P;
             int _dev_P_size[1] = {asz};
             int _dev_P_offset[1] = {0};
             int _dev_P_Dim[1] = {asz};
             _dev_P = ((int *) (xomp_deviceDataEnvironmentPrepareVariable(0, (void *) P, 1, sizeof(int), _dev_P_size,
-                                                                         _dev_P_offset, _dev_P_Dim, 0, 1)));
+                                                                         _dev_P_offset, _dev_P_Dim, 1, 1)));
             long long *_dev_maxPos_ptr;
             int _dev_maxPos_ptr_size[1] = {1};
             int _dev_maxPos_ptr_offset[1] = {0};
@@ -411,15 +411,16 @@ int main(int argc, char *argv[]) {
 
     // Copy data back to CPU if GPU is used
     if (nDiag >= OUTERLARGE) {
-        memCopyOutGPUTime = omp_get_wtime();
+        //memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
-        memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
+        //memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
 
-    //double finalTime = omp_get_wtime();
+    double finalTime = omp_get_wtime();
     //printf("GPU memory copy time Host to Device: %f\n", memCopyInGPUTime);
     //printf("GPU memory copy time Device to Host: %f\n", memCopyOutGPUTime);
     //printf("\nElapsed time for scoring matrix computation: %f\n", finalTime - initialTime);
+    printf("%f\n", finalTime - initialTime);
 
     //printf("%lld, %lld, %lld, %f, %f, %f, %f\n", m - 1, n - 1, OUTERLARGE, finalTime - initialTime, memCopyInGPUTime,
       //     memCopyOutGPUTime, memCopyInGPUTime + memCopyOutGPUTime);
