@@ -66,7 +66,7 @@ double omp_get_wtime()
 }
 
 #endif
-extern void calculate(char*, char*, long long int, long long int, long long int, int, int, int, long long int, long long int, int*, int*, long long int*, long long int, int, int);
+extern void calculate(char*, char*, long long int, long long int, long long int, int, int, int, long long int, long long int, int*, int*, long long int*, long long int, int, int, int);
 /*--------------------------------------------------------------------
  * Functions Prototypes
  */
@@ -107,10 +107,10 @@ void recoverScore(long long int i, int* H, int* P, int GPUDataSize, int* HGPU, i
  */
 bool useBuiltInData=true;
 
-//int MEDIUM=1;
-int MEDIUM=1200;
-//int LARGE=2048; // max 46340 for GPU of 16GB Device memory
-int LARGE=8000; // max 46340 for GPU of 16GB Device memory
+int MEDIUM=5;
+//int MEDIUM=1200;
+int LARGE=8; // max 46340 for GPU of 16GB Device memory
+//int LARGE=8000; // max 46340 for GPU of 16GB Device memory
 
 // the generated scoring matrix's size is m++ and n++ later to have the first row/column as 0s.
 
@@ -353,8 +353,8 @@ int main(int argc, char* argv[]) {
               // copy last two diagonals to HGPU and PGPU.
               // copy -1 diagonal
               int di, dj;
-              di = last1i;
-              dj = last1j;
+              di = last2i;
+              dj = last2j;
               long long int GPUDataIndex = 0;
               int GPUCopyOffset = 0;
               if (di < n) {
@@ -367,12 +367,12 @@ int main(int argc, char* argv[]) {
                 di--;
                 dj++;
               };
-              di = last2i;
-              dj = last2j;
+              di = last1i;
+              dj = last1j;
               if (di < n) {
                   GPUCopyOffset = 1;
               };
-              GPUDataIndex = 0;
+              GPUDataIndex = min(m,n);
               while (di >= 0 && dj < m) {
                 HGPU[GPUDataIndex+GPUCopyOffset] = H[di*m+dj];
                 PGPU[GPUDataIndex+GPUCopyOffset] = P[di*m+dj];
@@ -424,7 +424,7 @@ int main(int argc, char* argv[]) {
               GPUDataCopied = false;
               memCopyOutGPUTime = omp_get_wtime();
               xomp_deviceDataEnvironmentExit(0);
-//              recoverScore(i-GPUDataSize/min(m,n)+2, H, P, GPUDataSize, HGPU, PGPU);
+              recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
               memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
           };
 
@@ -459,7 +459,7 @@ int main(int argc, char* argv[]) {
           } else {// omp gpu version: large data set
 // choice 1: map data before the inner loop
               iterationTime = omp_get_wtime();
-              calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, HGPU, PGPU, maxPos_ptr, j, GPUDataSize, i-LARGE+2);
+              calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, HGPU, PGPU, maxPos_ptr, j, GPUDataSize, i-LARGE+2, GPUDataOffset);
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
               //if (i%600 == 0) {
@@ -509,6 +509,22 @@ int main(int argc, char* argv[]) {
 
     if (useBuiltInData)
     {
+     /*
+      printf("Last H: %lld\n", H[n*m-1]);
+      for (i = 0; i < n; i++) {
+          for (j = 0; j < m; j++) {
+              printf("%d ", H[i*m+j]);
+          }
+          printf("\n");
+      }
+      printf("H_GPU\n");
+      for (i = 0; i < GPUDataSize/min(m,n); i++) {
+          for (j = 0; j < min(m,n); j++) {
+              printf("%d ", HGPU[i*min(m,n)+j]);
+          }
+          printf("\n");
+      }
+      */
       printf ("Verifying results using the builtinIn data: %s\n", (H[n*m-1]==7)?"true":"false");
       assert (H[n*m-1]==7);
     }
@@ -605,9 +621,20 @@ void recoverScore(long long int i, int* H, int* P, int GPUDataSize, int* HGPU, i
     int row = 2;
     int len = GPUDataSize/min(m,n);
     int rowLength = min(m, n);
-    int GPUDataIndex = 2*rowLength;
-    for (j = 2; j < len; j++) {
-        index = 0;
+    int GPUDataIndex = GPUDataSize - 2*min(m,n);
+    /*
+    for (int p = 0; p < 2; p++) {
+        for (int q = 0; q < min(m,n); q++) {
+            printf("%lld ", HGPU[GPUDataIndex + q]);
+        }
+        printf("\n");
+        GPUDataIndex += min(m,n);
+    }
+    GPUDataIndex = GPUDataIndex - 2*min(m,n);
+    */
+
+
+    for (j = 0; j < 2; j++) {
         if (i < m && i < n) { // smaller than both directions
             nEle = i;
         } else if (i < max(m, n)) { // smaller than only one direction
@@ -629,10 +656,12 @@ void recoverScore(long long int i, int* H, int* P, int GPUDataSize, int* HGPU, i
         index = si * m + sj;
         for (k = GPUDataOffset; k < nEle; k++) {
             H[index] = HGPU[GPUDataIndex + k];
-            P[index] = PGPU[GPUDataIndex + k];
+            //P[index] = PGPU[GPUDataIndex + k];
             index = index - m + 1;
+            //printf("%lld ", HGPU[GPUDataIndex + k]);
         };
-
+        //printf("\n");
+        i++;
         GPUDataIndex += rowLength;
     }
 }

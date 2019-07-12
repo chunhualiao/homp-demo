@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-__global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapScore,int matchScore,int missmatchScore,long long si,long long sj,char *_dev_a,char *_dev_b,int *_dev_H,int *_dev_P,long long *_dev_maxPos_ptr,int diagonalIndex)
+__global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapScore,int matchScore,int missmatchScore,long long si,long long sj,char *_dev_a,char *_dev_b,int *_dev_H,int *_dev_P,long long *_dev_maxPos_ptr,int diagonalIndex,int GPUDataOffset)
 {
   long long _p_j;
   int _dev_lower;
@@ -34,15 +34,15 @@ __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapSco
         int up;
         int left;
         int diag;
-        int veri;
 //Stores index of element
-        long long index = m * ai + aj;
+        //long long index = m * ai + aj;
         long long len = min(m,n);
-        long long index2 = diagonalIndex*len + _p_j;
+        long long index2 = diagonalIndex*len + GPUDataOffset + _p_j;
 //Get element above
-        up = _dev_H[index2-len] + gapScore;
+        up = _dev_H[index2 - len + 1 - GPUDataOffset] + gapScore;
 //Get element on the left
-        left = _dev_H[index2 - len - ((long long )1) - 0] + gapScore;
+        //left = _dev_H[index2 - len - ((long long )1) - 0] + gapScore;
+        left = _dev_H[index2 - len - ((long long )GPUDataOffset) - 0] + gapScore;
 //Get element on the diagonal
         int t_mms;
         if (((int )_dev_a[aj - ((long long )1) - 0]) == ((int )_dev_b[ai - ((long long )1) - 0])) 
@@ -51,7 +51,13 @@ __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapSco
           t_mms = missmatchScore;
 // matchMissmatchScore(i, j);
         //diag = _dev_H[index - m - ((long long )1) - 0] + t_mms;
-        diag = _dev_H[index2 - len - ((long long )1) - 0] + t_mms;
+        long long temp = index2 - len*2 - ((long long )GPUDataOffset) + ((long long )(1-GPUDataOffset)) - 0;
+        //diag = _dev_H[index2 - len*2 - ((long long )GPUDataOffset) + ((long long )(1-GPUDataOffset)) - 0] + t_mms;
+        if (temp < 0) {
+            printf("INDEX < 0!!!!!!!!!!\n");
+            printf("DIA: %lld, INDEX: %lld, i: %lld\n", diagonalIndex, index2, _p_j);
+        };
+        diag = _dev_H[temp] + t_mms;
 // degug here
 // return;
 //Calculates the maximum
@@ -103,7 +109,7 @@ __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapSco
     }
 }
 
-void calculate(char *a,char *b,long long nEle,long long m,long long n,int gapScore,int matchScore,int missmatchScore,long long si,long long sj,int *H,int *P,long long *maxPos_ptr,long long j,int asz,int diagonalIndex)
+void calculate(char *a,char *b,long long nEle,long long m,long long n,int gapScore,int matchScore,int missmatchScore,long long si,long long sj,int *H,int *P,long long *maxPos_ptr,long long j,int asz,int diagonalIndex,int GPUDataOffset)
 {
 {
     xomp_deviceDataEnvironmentEnter(0);
@@ -135,7 +141,7 @@ void calculate(char *a,char *b,long long nEle,long long m,long long n,int gapSco
 /* Launch CUDA kernel ... */
     int _threads_per_block_ = xomp_get_maxThreadsPerBlock(0);
     int _num_blocks_ = xomp_get_max1DBlock(0,nEle - 1 - ((long long )0) + 1);
-    OUT__1__4550__<<<_num_blocks_,_threads_per_block_>>>(nEle,m,n,gapScore,matchScore,missmatchScore,si,sj,_dev_a,_dev_b,_dev_H,_dev_P,_dev_maxPos_ptr,diagonalIndex);
+    OUT__1__4550__<<<_num_blocks_,_threads_per_block_>>>(nEle,m,n,gapScore,matchScore,missmatchScore,si,sj,_dev_a,_dev_b,_dev_H,_dev_P,_dev_maxPos_ptr,diagonalIndex,GPUDataOffset);
     xomp_deviceDataEnvironmentExit(0);
   }
 }
