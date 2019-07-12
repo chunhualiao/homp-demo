@@ -422,7 +422,8 @@ int main(int argc, char* argv[]) {
           if (GPUDataCopied && nEle < LARGE) {
               GPUDataCopied = false;
               memCopyOutGPUTime = omp_get_wtime();
-              xomp_deviceDataEnvironmentExit(0);
+              xomp_sync();
+              //xomp_deviceDataEnvironmentExit(0);
               recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
               memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
           };
@@ -459,6 +460,8 @@ int main(int argc, char* argv[]) {
 // choice 1: map data before the inner loop
               iterationTime = omp_get_wtime();
               calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, HGPU, PGPU, maxPos_ptr, j, GPUDataSize, i-LARGE+2, GPUDataOffset);
+              xomp_deviceSmartDataTransfer(0, HGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
+              xomp_deviceSmartDataTransfer(0, PGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
               //if (i%600 == 0) {
@@ -478,7 +481,8 @@ int main(int argc, char* argv[]) {
     if (GPUDataCopied) {
         GPUDataCopied = false;
         memCopyOutGPUTime = omp_get_wtime();
-        xomp_deviceDataEnvironmentExit(0);
+        xomp_sync();
+        //xomp_deviceDataEnvironmentExit(0);
         recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
@@ -509,7 +513,7 @@ int main(int argc, char* argv[]) {
 
     if (useBuiltInData)
     {
-     /*
+    /* 
       printf("Last H: %lld\n", H[n*m-1]);
       for (i = 0; i < n; i++) {
           for (j = 0; j < m; j++) {
@@ -611,7 +615,6 @@ Then we have the first elements like
 (6,1) (6,2)
  
  */
-
 void recoverScore(long long int i, int* H, int* P, int GPUDataSize, int* HGPU, int* PGPU) {
     // lasti: the index i when GPU computing started.
     // lasti = i - GPUDataSize/min(m,n) + 3

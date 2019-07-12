@@ -53,10 +53,6 @@ __global__ void OUT__1__4550__(long long nEle,long long m,long long n,int gapSco
         //diag = _dev_H[index - m - ((long long )1) - 0] + t_mms;
         long long temp = index2 - len*2 - ((long long )GPUDataOffset) + ((long long )(1-GPUDataOffset)) - 0;
         //diag = _dev_H[index2 - len*2 - ((long long )GPUDataOffset) + ((long long )(1-GPUDataOffset)) - 0] + t_mms;
-        if (temp < 0) {
-            printf("INDEX < 0!!!!!!!!!!\n");
-            printf("DIA: %lld, INDEX: %lld, i: %lld\n", diagonalIndex, index2, _p_j);
-        };
         diag = _dev_H[temp] + t_mms;
 // degug here
 // return;

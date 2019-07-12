@@ -983,3 +983,32 @@ void xomp_deviceDataEnvironmentExit(int devID)
 }
 
 
+
+void xomp_deviceSmartDataTransfer(int devID, void* data, size_t size, long long int offset)
+{
+  assert ( DDE_tail[devID] != NULL );
+
+  // Deallocate mapped device variables which are allocated by this current DDE
+  // Optionally copy the value back to host if specified.
+  int i;
+    //printf("TARGET addr: %lld\n", data);
+  for (i = 0; i < DDE_tail[devID]->new_variable_count; i++)
+  {
+    struct XOMP_mapped_variable* mapped_var = DDE_tail[devID]->new_variables + i;
+    void * dev_address = mapped_var->dev_address;
+    //printf("VAR addr %d: %lld\n", i, mapped_var->address);
+    if (mapped_var->copyFrom && data == (void *)((char*)mapped_var->address))
+    {
+       //printf("Smart Data Transfer!\n");
+       cudaStream_t stream1;
+       cudaError_t result;
+       result = cudaStreamCreate(&stream1);
+       result = cudaMemcpyAsync(((void *)(((char*)mapped_var->address)+offset)), ((void *)(((char *)mapped_var->dev_address)+offset)), size, cudaMemcpyDeviceToHost, stream1);
+    }
+  }
+
+}
+
+void xomp_sync() {
+    cudaDeviceSynchronize();
+}

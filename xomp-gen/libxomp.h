@@ -243,6 +243,11 @@ extern void xomp_deviceDataEnvironmentAddVariable (int devID, void* var_addr, in
 //void XOMP_Device_Data_Environment_Exit();   
 extern void xomp_deviceDataEnvironmentExit(int devID);   
 
+
+extern void xomp_deviceSmartDataTransfer(int devID, void* data, size_t size, long long int offset);
+
+extern void xomp_sync();
+
 #ifdef __cplusplus
  }
 #endif
