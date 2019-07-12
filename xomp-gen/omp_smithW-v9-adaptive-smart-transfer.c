@@ -107,9 +107,9 @@ void recoverScore(long long int i, int* H, int* P, int GPUDataSize, int* HGPU, i
  */
 bool useBuiltInData=true;
 
-int MEDIUM=5;
+int MEDIUM=1;
 //int MEDIUM=1200;
-int LARGE=8; // max 46340 for GPU of 16GB Device memory
+int LARGE=1; // max 46340 for GPU of 16GB Device memory
 //int LARGE=8000; // max 46340 for GPU of 16GB Device memory
 
 // the generated scoring matrix's size is m++ and n++ later to have the first row/column as 0s.
@@ -175,15 +175,13 @@ int main(int argc, char* argv[]) {
     P = (int *)calloc(m * n, sizeof(int));
 //    printf ("debug: P's address=%p\n", P);
 
-    int GPUIterSizeSlope = 2*max(0, min(m,n)-1-LARGE);
-    int GPUIterSizeFlat = 0;
+    long long int GPUIterSizeSlope = 2*max(0, min(m,n)-1-LARGE);
+    long long int GPUIterSizeFlat = 0;
     if (LARGE <= min(m,n)) {
         GPUIterSizeFlat = max(m,n) - min(m,n) + 1;
     };
-    int GPUDataSize = min(m,n)*(GPUIterSizeSlope + GPUIterSizeFlat + 2);
-    //int GPUDataSize = (LARGE+min(m,n))*GPUIterSizeSlope + min(m,n)*GPUIterSizeFlat;
+    long long int GPUDataSize = min(m,n)*(GPUIterSizeSlope + GPUIterSizeFlat + 2);
     int *HGPU;
-    //GPUDataSize = m*n;
     HGPU = (int *) calloc(GPUDataSize, sizeof(int));
     int *PGPU;
     PGPU = (int *) calloc(GPUDataSize, sizeof(int));
@@ -367,6 +365,7 @@ int main(int argc, char* argv[]) {
                 di--;
                 dj++;
               };
+              GPUCopyOffset = 0;
               di = last1i;
               dj = last1j;
               if (di < n) {
@@ -480,6 +479,7 @@ int main(int argc, char* argv[]) {
         GPUDataCopied = false;
         memCopyOutGPUTime = omp_get_wtime();
         xomp_deviceDataEnvironmentExit(0);
+        recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };
 
