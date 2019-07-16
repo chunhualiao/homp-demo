@@ -183,8 +183,12 @@ int main(int argc, char* argv[]) {
     long long int GPUDataSize = min(m,n)*(GPUIterSizeSlope + GPUIterSizeFlat + 2);
     int *HGPU;
     HGPU = (int *) calloc(GPUDataSize, sizeof(int));
+    //xomp_mallocHost((void *)HGPU, (size_t)GPUDataSize*sizeof(int));
+    //HGPU = (int *) xomp_mallocHost(((void **)(&HGPU)), GPUDataSize*sizeof(int));
     int *PGPU;
     PGPU = (int *) calloc(GPUDataSize, sizeof(int));
+    //xomp_mallocHost((void *)PGPU, (size_t)GPUDataSize*sizeof(int));
+    //PGPU = (int *) xomp_mallocHost(((void **)(&PGPU)), GPUDataSize*sizeof(int));
 
     if (useBuiltInData)
     {
@@ -349,7 +353,7 @@ int main(int argc, char* argv[]) {
           if (nEle >= LARGE && !GPUDataCopied) {
               memCopyInGPUTime = omp_get_wtime();
               // copy last two diagonals to HGPU and PGPU.
-              // copy -1 diagonal
+              // copy -2 diagonal
               int di, dj;
               di = last2i;
               dj = last2j;
@@ -365,6 +369,7 @@ int main(int argc, char* argv[]) {
                 di--;
                 dj++;
               };
+              // copy -1 diagonal
               GPUCopyOffset = 0;
               di = last1i;
               dj = last1j;
@@ -422,8 +427,8 @@ int main(int argc, char* argv[]) {
           if (GPUDataCopied && nEle < LARGE) {
               GPUDataCopied = false;
               memCopyOutGPUTime = omp_get_wtime();
-              xomp_sync();
-              //xomp_deviceDataEnvironmentExit(0);
+              //xomp_sync();
+              xomp_deviceDataEnvironmentExit(0);
               recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
               memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
           };
@@ -460,8 +465,8 @@ int main(int argc, char* argv[]) {
 // choice 1: map data before the inner loop
               iterationTime = omp_get_wtime();
               calculate(a, b, nEle, m, n, gapScore, matchScore, missmatchScore, si, sj, HGPU, PGPU, maxPos_ptr, j, GPUDataSize, i-LARGE+2, GPUDataOffset);
-              xomp_deviceSmartDataTransfer(0, HGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
-              xomp_deviceSmartDataTransfer(0, PGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
+              //xomp_deviceSmartDataTransfer(0, HGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
+              //xomp_deviceSmartDataTransfer(0, PGPU, 4*min(m,n), (i-LARGE+2)*4*min(m,n));
               iterationTime = omp_get_wtime() - iterationTime;
               //printf("GPU iteration: %d, nEle: %d, time: %fs.\n", i, nEle, iterationTime);
               //if (i%600 == 0) {
@@ -481,8 +486,8 @@ int main(int argc, char* argv[]) {
     if (GPUDataCopied) {
         GPUDataCopied = false;
         memCopyOutGPUTime = omp_get_wtime();
-        xomp_sync();
-        //xomp_deviceDataEnvironmentExit(0);
+        //xomp_sync();
+        xomp_deviceDataEnvironmentExit(0);
         recoverScore(i-2, H, P, GPUDataSize, HGPU, PGPU);
         memCopyOutGPUTime = omp_get_wtime() - memCopyOutGPUTime;
     };

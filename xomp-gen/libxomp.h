@@ -248,6 +248,8 @@ extern void xomp_deviceSmartDataTransfer(int devID, void* data, size_t size, lon
 
 extern void xomp_sync();
 
+extern void* xomp_mallocHost(void**, size_t);
+
 #ifdef __cplusplus
  }
 #endif

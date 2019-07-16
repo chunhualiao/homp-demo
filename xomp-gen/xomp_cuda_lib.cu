@@ -1012,3 +1012,9 @@ void xomp_deviceSmartDataTransfer(int devID, void* data, size_t size, long long 
 void xomp_sync() {
     cudaDeviceSynchronize();
 }
+
+void* xomp_mallocHost(void** ptr, size_t size) {
+    cudaMallocHost(ptr, size);
+    return *ptr;
+}
+
