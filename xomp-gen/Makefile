@@ -1,4 +1,6 @@
 all: a.out a5120.out axpy.out mm.out v8.3_gm.out
+NVCC_FLAGS=-O3 -DSKIP_BACKTRACK -g
+
 # default size 512
 a.out: rose_jacobi-acc-opt2.cu xomp_cuda_lib.cu
 	nvcc $^ -o $@
@@ -12,11 +14,15 @@ axpy.out: rose_axpy_ompacc.cu xomp_cuda_lib.cu
 mm.out: rose_matrixmultiply-ompacc.cu xomp_cuda_lib.cu
 	nvcc $^ -o $@
 
-# v 6: adaptive
+# v6: baseline target version
 # ----------------------------------
+#  data map is before inner loop
 v6.5.out: rose_omp_smithW-v6.5-target-inlined-work.cu xomp_cuda_lib.cu
-	nvcc $^ -g -G -o $@
-# v 7: adaptive
+	nvcc $(NVCC_FLAGS) $^ -o $@
+# data map is before the outer loop: optimzed version
+v6.6.out: rose_omp_smithW-v6.6-target-inlined-opt.cu xomp_cuda_lib.cu
+	nvcc $(NVCC_FLAGS) $^ -o $@
+# v7: adaptive
 # ----------------------------------
 omp_smithW-v7.1-adaptive.o: omp_smithW-v7.1-adaptive.c
 	gcc -fopenmp -g -c $^

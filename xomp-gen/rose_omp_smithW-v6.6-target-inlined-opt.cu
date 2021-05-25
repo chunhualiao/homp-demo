@@ -255,6 +255,39 @@ int main(int argc,char *argv[])
   int asz = (m * n);
   // choice 2: map data before the outer loop
   //#pragma omp target map (to:a[0:m], b[0:n], nDiag, m,n,gapScore, matchScore, missmatchScore) map(tofrom: H[0:asz], P[0:asz], maxPos)
+  //--------------------------------------
+  // data mapping begins
+  // choice 1: map data before the inner loop
+  long long *maxPos_ptr = &maxPos;
+  xomp_deviceDataEnvironmentEnter(0);
+  char *_dev_a;
+  int _dev_a_size[1] = {(int)m};
+  int _dev_a_offset[1] = {0};
+  int _dev_a_Dim[1] = {(int)m};
+  _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
+  char *_dev_b;
+  int _dev_b_size[1] = {(int)n};
+  int _dev_b_offset[1] = {0};
+  int _dev_b_Dim[1] = {(int)n};
+  _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
+  int *_dev_H;
+  int _dev_H_size[1] = {asz};
+  int _dev_H_offset[1] = {0};
+  int _dev_H_Dim[1] = {asz};
+  _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
+  int *_dev_P;
+  int _dev_P_size[1] = {asz};
+  int _dev_P_offset[1] = {0};
+  int _dev_P_Dim[1] = {asz};
+  _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
+  long long *_dev_maxPos_ptr;
+  int _dev_maxPos_ptr_size[1] = {1};
+  int _dev_maxPos_ptr_offset[1] = {0};
+  int _dev_maxPos_ptr_Dim[1] = {1};
+  _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
+
+  // data mapping ends
+
   //  #pragma omp parallel default(none) shared(H, P, maxPos, nDiag, j) private(i)
   {
     // start from 1 since 0 is the boundary padding
@@ -298,49 +331,17 @@ int main(int argc,char *argv[])
         // j position is the nDiag (id -n) +1 +1 // first +1 
         sj = i - n + 2;
       }
-      //--------------------------------------
-      {
-        // choice 1: map data before the inner loop
-        long long *maxPos_ptr = &maxPos;
-        {
-          xomp_deviceDataEnvironmentEnter(0);
-          char *_dev_a;
-          int _dev_a_size[1] = {(int)m};
-          int _dev_a_offset[1] = {0};
-          int _dev_a_Dim[1] = {(int)m};
-          _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
-          char *_dev_b;
-          int _dev_b_size[1] = {(int)n};
-          int _dev_b_offset[1] = {0};
-          int _dev_b_Dim[1] = {(int)n};
-          _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
-          int *_dev_H;
-          int _dev_H_size[1] = {asz};
-          int _dev_H_offset[1] = {0};
-          int _dev_H_Dim[1] = {asz};
-          _dev_H = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)H,1,sizeof(int ),_dev_H_size,_dev_H_offset,_dev_H_Dim,1,1)));
-          int *_dev_P;
-          int _dev_P_size[1] = {asz};
-          int _dev_P_offset[1] = {0};
-          int _dev_P_Dim[1] = {asz};
-          _dev_P = ((int *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)P,1,sizeof(int ),_dev_P_size,_dev_P_offset,_dev_P_Dim,1,1)));
-          long long *_dev_maxPos_ptr;
-          int _dev_maxPos_ptr_size[1] = {1};
-          int _dev_maxPos_ptr_offset[1] = {0};
-          int _dev_maxPos_ptr_Dim[1] = {1};
-          _dev_maxPos_ptr = ((long long *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)maxPos_ptr,1,sizeof(long long ),_dev_maxPos_ptr_size,_dev_maxPos_ptr_offset,_dev_maxPos_ptr_Dim,1,1)));
-
-          /* Launch CUDA kernel ... */
-          int _threads_per_block_ = xomp_get_maxThreadsPerBlock(0);
-          int _num_blocks_ = xomp_get_max1DBlock(0,nEle - 1 - ((long long )0) + 1);
-          OUT__1__7018__<<<_num_blocks_,_threads_per_block_>>>(m,n,gapScore,matchScore,missmatchScore,nEle,si,sj,_dev_a,_dev_b,_dev_H,_dev_P,_dev_maxPos_ptr);
-          xomp_deviceDataEnvironmentExit(0);
-        }
-      }
       // for end nDiag
+      /* Launch CUDA kernel ... */
+      int _threads_per_block_ = xomp_get_maxThreadsPerBlock(0);
+      int _num_blocks_ = xomp_get_max1DBlock(0,nEle - 1 - ((long long )0) + 1);
+      OUT__1__7018__<<<_num_blocks_,_threads_per_block_>>>(m,n,gapScore,matchScore,missmatchScore,nEle,si,sj,_dev_a,_dev_b,_dev_H,_dev_P,_dev_maxPos_ptr);
+
     }
     // end omp parallel
   }
+  xomp_deviceDataEnvironmentExit(0);
+
   double finalTime = omp_get_wtime();
   printf("\nElapsed time for scoring matrix computation: %f\n",finalTime - initialTime);
 #if !SKIP_BACKTRACK  
@@ -358,9 +359,11 @@ int main(int argc,char *argv[])
   //Frees similarity matrixes
   free(H);
   free(P);
+#if 0  // causing core dump for larger arrays
   //Frees input arrays
   free(a);
   free(b);
+#endif   
   return 0;
   /* End of main */
 }
