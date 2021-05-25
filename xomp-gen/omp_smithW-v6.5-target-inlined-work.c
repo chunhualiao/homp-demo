@@ -147,29 +147,7 @@ int main(int argc, char* argv[]) {
 
     if (useBuiltInData)
     {
-      //Uncomment this to test the sequence available at 
-      //http://vlab.amrita.edu/?sub=3&brch=274&sim=1433&cnt=1
-      // OBS: m=11 n=7
-      // a[0] =   'C';
-      // a[1] =   'G';
-      // a[2] =   'T';
-      // a[3] =   'G';
-      // a[4] =   'A';
-      // a[5] =   'A';
-      // a[6] =   'T';
-      // a[7] =   'T';
-      // a[8] =   'C';
-      // a[9] =   'A';
-      // a[10] =  'T';
-
-      // b[0] =   'G';
-      // b[1] =   'A';
-      // b[2] =   'C';
-      // b[3] =   'T';
-      // b[4] =   'T';
-      // b[5] =   'A';
-      // b[6] =   'C';
-      // https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm#Example
+     // https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm#Example
       // Using the wiki example to verify the results
       b[0] =   'G';
       b[1] =   'G';

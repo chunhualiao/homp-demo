@@ -1,4 +1,4 @@
-static void *xomp_critical_user_;
+//static void *xomp_critical_user_;
 /*********************************************************************************
  * Smith–Waterman algorithm
  * Purpose:     Local alignment of nucleotide or protein sequences
@@ -13,7 +13,7 @@ static void *xomp_critical_user_;
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <omp.h>
+// #include <omp.h>
 #include <time.h>
 #include <assert.h>
 #include <stdbool.h> // C99 does not support the boolean data type
@@ -52,11 +52,13 @@ double time_stamp()
   time = t . tv_sec + 1.0e-6 * t . tv_usec;
   return time;
 }
-
-double  __attribute__((no_throw)) omp_get_wtime()
+#if 1
+// extern double omp_get_wtime (void) __GOMP_NOTHROW;
+double omp_get_wtime() 
 {
   return time_stamp();
 }
+#endif
 /*--------------------------------------------------------------------
  * Functions Prototypes
  */
@@ -185,7 +187,7 @@ int main(int argc,char *argv[])
 {
   xomp_acc_init();
 // thread_count is no longer used
-  int thread_count;
+//  int thread_count;
   if (argc == 3) {
     m = strtoll(argv[1],(char**)((void *)0),10);
     n = strtoll(argv[2],(char**)((void *)0),10);
@@ -262,7 +264,7 @@ int main(int argc,char *argv[])
   long long maxPos = 0;
 //Calculates the similarity matrix
   long long i;
-  long long j;
+//  long long j;
 // The way to generate all wavefront is to go through the top edge elements
 // starting from the left top of the matrix, go to the bottom top -> down, then left->right
 // total top edge element count =  dim1_size + dim2_size -1 
@@ -327,14 +329,14 @@ if (i < ((m > n?m : n))) {
 {
           xomp_deviceDataEnvironmentEnter(0);
           char *_dev_a;
-          int _dev_a_size[1] = {m};
+          int _dev_a_size[1] = {(int)m};
           int _dev_a_offset[1] = {0};
-          int _dev_a_Dim[1] = {m};
+          int _dev_a_Dim[1] = {(int)m};
           _dev_a = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)a,1,sizeof(char ),_dev_a_size,_dev_a_offset,_dev_a_Dim,1,0)));
           char *_dev_b;
-          int _dev_b_size[1] = {n};
+          int _dev_b_size[1] = {(int)n};
           int _dev_b_offset[1] = {0};
-          int _dev_b_Dim[1] = {n};
+          int _dev_b_Dim[1] = {(int)n};
           _dev_b = ((char *)(xomp_deviceDataEnvironmentPrepareVariable(0,(void *)b,1,sizeof(char ),_dev_b_size,_dev_b_offset,_dev_b_Dim,1,0)));
           int *_dev_H;
           int _dev_H_size[1] = {asz};

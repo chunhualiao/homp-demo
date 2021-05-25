@@ -12,9 +12,12 @@ axpy.out: rose_axpy_ompacc.cu xomp_cuda_lib.cu
 mm.out: rose_matrixmultiply-ompacc.cu xomp_cuda_lib.cu
 	nvcc $^ -o $@
 
+# v 6: adaptive
+# ----------------------------------
 v6.5.out: rose_omp_smithW-v6.5-target-inlined-work.cu xomp_cuda_lib.cu
 	nvcc $^ -g -G -o $@
-
+# v 7: adaptive
+# ----------------------------------
 omp_smithW-v7.1-adaptive.o: omp_smithW-v7.1-adaptive.c
 	gcc -fopenmp -g -c $^
 
